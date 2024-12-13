@@ -16,13 +16,16 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
     public ImmutableArray<TEntity> FindMatches(TEntity entity, params IEnumerable<TMatchType> matchRequirements)
     {
         ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(matchRequirements);
 
-        if (!matchRequirements.Any())
+        var matchRequirementMaterialized = matchRequirements.ToImmutableArray();
+
+        if (!matchRequirementMaterialized.Any())
             return ImmutableArray<TEntity>.Empty;
 
         return
         [
-            ..matchRequirements
+            ..matchRequirementMaterialized
                 .Select(type => GetStrategy(type)(entity))
                 .Aggregate((current, next) => current.Intersect(next))
         ];
@@ -47,12 +50,17 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         params IEnumerable<IEnumerable<TMatchType>> matchRequirementGroupings)
     {
         ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(matchRequirementGroupings);
 
-        if (!matchRequirementGroupings.Any())
+        var matchRequirementGroupingsMaterialized = matchRequirementGroupings
+            .Select(x => x.ToImmutableArray())
+            .ToImmutableArray();
+
+        if (!matchRequirementGroupingsMaterialized.Any())
             return (ImmutableArray<TEntity>.Empty, ImmutableArray<TMatchType>.Empty);
 
 
-        foreach (var matchRequirements in matchRequirementGroupings)
+        foreach (var matchRequirements in matchRequirementGroupingsMaterialized)
         {
             var matches = FindMatches(entity, matchRequirements);
             if (matches.Length == 0) continue;
@@ -76,7 +84,7 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
     /// </exception>
     private Func<TEntity, ImmutableHashSet<TEntity>> GetStrategy(TMatchType matchType)
     {
-        return _matchStrategies.It.TryGetValue(matchType, out var strategy)
+        return _matchStrategies.Value.It.TryGetValue(matchType, out var strategy)
             ? strategy
             : throw new ArgumentException($"No strategy defined for match type: {matchType}", nameof(matchType));
     }

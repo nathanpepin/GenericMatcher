@@ -31,9 +31,12 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
 
         _seedEntities = seedEntities.ToImmutableHashSet();
         var definitions = matchDefinitions.ToImmutableArray();
-
-        var entityLookups = CreateLookups(_seedEntities, definitions);
-        _matchStrategies = CreateMatchStrategies(definitions, entityLookups);
+        
+        _entityLookups = new Lazy<EntityLookups<TEntity, TMatchType>>(() => 
+            CreateLookups(_seedEntities, definitions));
+        
+        _matchStrategies = new Lazy<MatchStrategies<TEntity, TMatchType>>(() => 
+            CreateMatchStrategies(definitions, _entityLookups.Value));
     }
 
     /// <summary>
