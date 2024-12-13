@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using GenericMatcher.Collections;
+using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.EntityMatch;
 
@@ -29,13 +30,15 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         ArgumentNullException.ThrowIfNull(seedEntities);
         ArgumentNullException.ThrowIfNull(matchDefinitions);
 
-        _seedEntities = seedEntities.ToImmutableHashSet();
         var definitions = matchDefinitions.ToImmutableArray();
-        
-        _entityLookups = new Lazy<EntityLookups<TEntity, TMatchType>>(() => 
+        ValidateMatchDefinitions(definitions);
+
+        _seedEntities = seedEntities.ToImmutableHashSet();
+
+        _entityLookups = new Lazy<EntityLookups<TEntity, TMatchType>>(() =>
             CreateLookups(_seedEntities, definitions));
-        
-        _matchStrategies = new Lazy<MatchStrategies<TEntity, TMatchType>>(() => 
+
+        _matchStrategies = new Lazy<MatchStrategies<TEntity, TMatchType>>(() =>
             CreateMatchStrategies(definitions, _entityLookups.Value));
     }
 
@@ -80,7 +83,7 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
             .AsParallel()
             .GroupBy(keySelector)
             .ToFrozenDictionary(
-                group => group.Key, 
+                group => group.Key,
                 group => group.ToImmutableHashSet());
     }
 
@@ -120,5 +123,33 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         object key)
     {
         return lookup.TryGetValue(key, out var matches) ? matches : ImmutableHashSet<TEntity>.Empty;
+    }
+
+    /// Validates the collection of match definitions to ensure it meets the expected requirements.
+    /// This method ensures that there is at least one match definition provided and no duplicate match types exist.
+    /// <param name="definitions">
+    /// An immutable array of match definitions to validate. Each definition associates a match type
+    /// with a key selector function for grouping entities.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the collection of match definitions is empty.
+    /// </exception>
+    /// <exception cref="DuplicateMatchTypesException">
+    /// Thrown when there are multiple match definitions with the same match type.
+    /// </exception>
+    private static void ValidateMatchDefinitions(
+        ImmutableArray<MatchDefinition<TEntity, TMatchType>> definitions)
+    {
+        if (!definitions.Any())
+            throw new NoMatchDefinitionException();
+
+        var duplicateTypes = definitions
+            .GroupBy(d => d.MatchType)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key.ToString())
+            .ToImmutableArray();
+
+        if (duplicateTypes.Length != 0)
+            throw new DuplicateMatchTypesException(duplicateTypes);
     }
 }

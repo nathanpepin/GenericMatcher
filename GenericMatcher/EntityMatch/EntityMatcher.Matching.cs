@@ -32,6 +32,37 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
     }
 
     /// <summary>
+    /// Asynchronously finds and returns the entities that match the specified entity based on the given match requirements.
+    /// </summary>
+    /// <param name="entity">The entity to find matches for.</param>
+    /// <param name="matchRequirements">A collection of match requirements specifying the criteria for matching.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains an immutable array of entities
+    /// that match the criteria defined by the given match requirements. If no match requirements are provided or
+    /// no matches are found, an empty immutable array is returned.
+    /// </returns>
+    public async Task<ImmutableArray<TEntity>> FindMatchesAsync(
+        TEntity entity,
+        IEnumerable<TMatchType> matchRequirements,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var matchRequirementMaterialized = matchRequirements.ToImmutableArray();
+
+        if (!matchRequirementMaterialized.Any())
+            return ImmutableArray<TEntity>.Empty;
+
+        var matchTasks = matchRequirementMaterialized
+            .Select(type => Task.Run(() => GetStrategy(type)(entity), cancellationToken));
+
+        var results = await Task.WhenAll(matchTasks);
+
+        return [..results.Aggregate((current, next) => current.Intersect(next))];
+    }
+
+    /// <summary>
     /// Finds matches for a given entity based on a tiered hierarchy of match requirements.
     /// The method evaluates each requirement grouping sequentially and returns the matches
     /// from the first tier that satisfies the conditions.
@@ -63,6 +94,48 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         foreach (var matchRequirements in matchRequirementGroupingsMaterialized)
         {
             var matches = FindMatches(entity, matchRequirements);
+            if (matches.Length == 0) continue;
+
+            return (matches, [..matchRequirements]);
+        }
+
+        return (ImmutableArray<TEntity>.Empty, ImmutableArray<TMatchType>.Empty);
+    }
+
+    /// <summary>
+    /// Asynchronously finds and returns the entities that match the specified entity based on tiered match requirements.
+    /// </summary>
+    /// <param name="entity">The entity to find tiered matches for.</param>
+    /// <param name="matchRequirementGroupings">
+    /// A collection of collections, where each inner collection represents a set of match requirements to evaluate.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to observe while waiting for the task to complete. The default value is <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>
+    /// A tuple where the first item is an immutable array of the entities that match the criteria of any tier, and the second item is an immutable array of match requirements corresponding to the matches.
+    /// If no match groupings or matches are found, both items in the tuple will be empty immutable arrays.
+    /// </returns>
+    public async Task<(ImmutableArray<TEntity>, ImmutableArray<TMatchType>)> FindMatchesTieredAsync(
+        TEntity entity,
+        IEnumerable<IEnumerable<TMatchType>> matchRequirementGroupings,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var matchRequirementGroupingsMaterialized = matchRequirementGroupings
+            .Select(x => x.ToImmutableArray())
+            .ToImmutableArray();
+
+
+        if (!matchRequirementGroupingsMaterialized.Any())
+            return (ImmutableArray<TEntity>.Empty, ImmutableArray<TMatchType>.Empty);
+
+        foreach (var matchRequirements in matchRequirementGroupingsMaterialized)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var matches = await FindMatchesAsync(entity, matchRequirements, cancellationToken);
             if (matches.Length == 0) continue;
 
             return (matches, [..matchRequirements]);
