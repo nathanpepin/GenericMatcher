@@ -77,9 +77,11 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         Func<TEntity, object> keySelector)
     {
         return entities
+            .AsParallel()
             .GroupBy(keySelector)
             .ToFrozenDictionary(
-                group => group.Key, group => group.ToImmutableHashSet());
+                group => group.Key, 
+                group => group.ToImmutableHashSet());
     }
 
     /// Creates match strategies based on the given match definitions and entity lookups.
