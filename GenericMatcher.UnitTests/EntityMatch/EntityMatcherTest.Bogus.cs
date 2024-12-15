@@ -1,8 +1,9 @@
+using System.Collections.Frozen;
 using Bogus;
 using FluentAssertions;
 using GenericMatcher.EntityMatch;
 
-namespace GenericMatcher.Tests.EntityMatch;
+namespace GenericMatcher.UnitTests.EntityMatch;
 
 public sealed class EntityMatcherTestsBogus
 {
@@ -11,19 +12,19 @@ public sealed class EntityMatcherTestsBogus
             .CustomInstantiator(f => new TestEntity(
                 Id: Guid.NewGuid(),
                 Name: f.Name.FullName(),
-                Email: f.Internet.Email(),
+                Email: f.Internet.Email().ToLowerInvariant(),
                 PhoneNumber: f.Phone.PhoneNumber(),
                 DateOfBirth: DateOnly.FromDateTime(f.Date.Past(50)),
                 Address: f.Address.FullAddress()));
 
-    private static readonly IReadOnlyList<MatchDefinition<TestEntity, TestMatchType>> MatchDefinitions =
+    private static readonly IReadOnlyList<IMatchDefinition<TestEntity, TestMatchType>> MatchDefinitions =
     [
-        new(TestMatchType.Id, entity => entity.Id),
-        new(TestMatchType.Name, entity => entity.Name.ToLowerInvariant()),
-        new(TestMatchType.Email, entity => entity.Email.ToLowerInvariant()),
-        new(TestMatchType.Phone, entity => entity.PhoneNumber),
-        new(TestMatchType.DateOfBirth, entity => entity.DateOfBirth),
-        new(TestMatchType.Address, entity => entity.Address.ToLowerInvariant())
+        new IdMatch(),
+        new NameMatch(),
+        new EmailMatch(),
+        new PhoneMatch(),
+        new DateOfBirthMatch(),
+        new AddressMatch()
     ];
 
     [Fact]
@@ -35,8 +36,7 @@ public sealed class EntityMatcherTestsBogus
         var matcher = CreateMatcher([seedEntity]);
 
         // Act
-        var result = matcher.FindMatches(
-            matchingEntity, TestMatchType.Name, TestMatchType.Email);
+        var result = matcher.FindMatches(matchingEntity, TestMatchType.Name, TestMatchType.Email);
 
         // Assert
         result.Should().ContainSingle()
@@ -47,13 +47,12 @@ public sealed class EntityMatcherTestsBogus
     public void FindMatches_WithNoMatch_ReturnsEmpty()
     {
         // Arrange
-        var seedEntities = EntityFaker.Generate(5);
+        var seedEntities = GenerateEntities(5);
         var nonMatchingEntity = EntityFaker.Generate();
         var matcher = CreateMatcher(seedEntities);
 
         // Act
-        var result = matcher.FindMatches(
-            nonMatchingEntity, TestMatchType.Email, TestMatchType.Phone);
+        var result = matcher.FindMatches(nonMatchingEntity, TestMatchType.Email, TestMatchType.Phone);
 
         // Assert
         result.Should().BeEmpty();
@@ -63,10 +62,9 @@ public sealed class EntityMatcherTestsBogus
     public void CreateTwoWayMatches_WithPartialMatches_ReturnsCorrectMapping()
     {
         // Arrange
-        var seedEntities = GenerateEntitiesWithSomeMatching(
+        var (seedEntities, matchingEntities) = GenerateMatchingSets(
             totalCount: 10,
-            matchingCount: 5,
-            out var matchingEntities);
+            matchingCount: 5);
 
         var matcher = CreateMatcher(seedEntities);
         var matchTypes = new[] { TestMatchType.Email, TestMatchType.Phone };
@@ -77,14 +75,14 @@ public sealed class EntityMatcherTestsBogus
         // Assert
         result.MatchedAToB.Count.Should().Be(5);
         result.UnmatchedA.Count.Should().Be(5);
-        result.UnmatchedB.Count.Should().Be(5);
+        result.UnmatchedB.Count.Should().Be(0);
     }
 
     [Fact]
     public void CreateTieredMatches_WithMultipleTiers_MatchesCorrectly()
     {
         // Arrange
-        var (seedEntities, candidateEntities) = GenerateEntitiesForTieredMatching(10);
+        var (seedEntities, candidateEntities) = GenerateTieredMatchingData(10);
         var matcher = CreateMatcher(seedEntities);
 
         var matchTiers = new[]
@@ -95,56 +93,61 @@ public sealed class EntityMatcherTestsBogus
         };
 
         // Act
-        var result = matcher.CreateTwoWayMatchDictionaryTiered(candidateEntities, matchTiers);
+        var result = matcher.CreateTwoWayMatchDictionary(candidateEntities, matchTiers);
 
         // Assert
         result.AToB.Count.Should().BeGreaterThan(0);
         result.UnmatchedA.Count.Should().BeLessThan(seedEntities.Count);
     }
 
-    private static EntityMatcher<TestEntity, TestMatchType> CreateMatcher(IEnumerable<TestEntity> seedEntities) =>
+    // Helper Methods
+    private static EntityMatcher<TestEntity, TestMatchType> CreateMatcher(IReadOnlyList<TestEntity> seedEntities) =>
         new(seedEntities, MatchDefinitions);
 
-    private static List<TestEntity> GenerateEntitiesWithSomeMatching(
+    private static IReadOnlyList<TestEntity> GenerateEntities(int count) =>
+        EntityFaker.Generate(count).ToFrozenSet().ToArray();
+
+    private static (IReadOnlyList<TestEntity> Seeds, IReadOnlyList<TestEntity> Matches) GenerateMatchingSets(
         int totalCount,
-        int matchingCount,
-        out IReadOnlyList<TestEntity> matchingEntities)
+        int matchingCount)
     {
-        var seeds = EntityFaker.Generate(totalCount);
-        matchingEntities = seeds
+        var seeds = GenerateEntities(totalCount);
+        var matches = seeds
             .Take(matchingCount)
             .Select(e => e with { Id = Guid.NewGuid() })
-            .ToList();
+            .ToArray();
 
-        return seeds;
+        return (seeds, matches);
     }
 
     private static (IReadOnlyList<TestEntity> Seeds, IReadOnlyList<TestEntity> Candidates)
-        GenerateEntitiesForTieredMatching(int count)
+        GenerateTieredMatchingData(int count)
     {
-        var seeds = EntityFaker.Generate(count);
+        var seeds = GenerateEntities(count);
 
-        var candidates = seeds.Select((seed, i) => i switch
+        var candidates = seeds.Select((seed, i) =>
         {
-            _ when i < count * 0.3 =>
-                seed with
+            var matchPercentage = i / (double)count;
+            return matchPercentage switch
+            {
+                < 0.3 => seed with
                 {
                     Id = Guid.NewGuid(),
                     PhoneNumber = seed.PhoneNumber
                 },
-            _ when i < count * 0.6 =>
-                seed with
+                < 0.6 => seed with
                 {
                     Id = Guid.NewGuid(),
                     Name = seed.Name,
                     DateOfBirth = seed.DateOfBirth
                 },
-            _ => seed with
-            {
-                Id = Guid.NewGuid(),
-                Address = seed.Address
-            }
-        }).ToList();
+                _ => seed with
+                {
+                    Id = Guid.NewGuid(),
+                    Address = seed.Address
+                }
+            };
+        }).ToArray();
 
         return (seeds, candidates);
     }

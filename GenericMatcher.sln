@@ -4,13 +4,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericMatcher", "GenericMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericMatcher.App", "GenericMatcher.App\GenericMatcher.App.csproj", "{C9368978-F95E-4DA9-838F-208C326CFC91}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericMatcher.Tests", "GenericMatcher.Tests\GenericMatcher.Tests.csproj", "{B77EC435-0598-4974-B7AC-DB012C99E153}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionsItems", "SolutionsItems", "{C9BCD17A-159F-4E0A-B9B1-DD07408DFF8B}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericMatcher.Benchmarks", "GenericMatcher.Benchmarks\GenericMatcher.Benchmarks.csproj", "{A7571E7B-382E-454E-925C-C427A7554340}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericMatcher.UnitTests", "GenericMatcher.UnitTests\GenericMatcher.UnitTests.csproj", "{30379265-B08F-4E97-97BD-CE89DA352308}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +28,13 @@ Global
 		{C9368978-F95E-4DA9-838F-208C326CFC91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9368978-F95E-4DA9-838F-208C326CFC91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9368978-F95E-4DA9-838F-208C326CFC91}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B77EC435-0598-4974-B7AC-DB012C99E153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B77EC435-0598-4974-B7AC-DB012C99E153}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B77EC435-0598-4974-B7AC-DB012C99E153}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B77EC435-0598-4974-B7AC-DB012C99E153}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7571E7B-382E-454E-925C-C427A7554340}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7571E7B-382E-454E-925C-C427A7554340}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7571E7B-382E-454E-925C-C427A7554340}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7571E7B-382E-454E-925C-C427A7554340}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30379265-B08F-4E97-97BD-CE89DA352308}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30379265-B08F-4E97-97BD-CE89DA352308}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30379265-B08F-4E97-97BD-CE89DA352308}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30379265-B08F-4E97-97BD-CE89DA352308}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,4 +1,5 @@
-﻿using GenericMatcher;
+﻿using System.Collections.Frozen;
+using GenericMatcher;
 using GenericMatcher.App.Data;
 using GenericMatcher.EntityMatch;
 
@@ -26,29 +27,18 @@ List<Person> bPersons =
     new("7", "7", true, new DateOnly(2080, 1, 1))
 ];
 
-MatchDefinition<Person, PersonMatchType>[] definitions =
+IMatchDefinition<Person, PersonMatchType>[] definitions =
 [
-    new(
-        PersonMatchType.Ssn,
-        p => p.MemberIdentificationNumber.ToUpperInvariant()),
-
-    new(
-        PersonMatchType.DepSsn,
-        p => p.Ssn?.ToUpperInvariant() ?? "000000000"),
-
-    new(
-        PersonMatchType.IsEmployee,
-        p => p.IsEmployee),
-
-    new(
-        PersonMatchType.DateOfBirth,
-        p => p.DateOfBirth)
+    new PersonSnnMatchDefinition(),
+    new PersonIsEmployeeMatchDefinition(),
+    new PersonDepSnnMatchDefinition(),
+    new PersonDobMatchDefinition(),
 ];
 
 
 var matcher = new EntityMatcher<Person, PersonMatchType>(aPersons, definitions);
 
-var j = matcher.FindMatches(bPersons[0], PersonMatchType.DateOfBirth);
+var j = matcher.FindMatches(aPersons[0], PersonMatchType.Ssn);
 
 var jj = matcher.CreateTwoWayMatchDictionary(bPersons, PersonMatchType.Ssn);
 

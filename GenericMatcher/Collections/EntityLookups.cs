@@ -9,9 +9,9 @@ namespace GenericMatcher.Collections;
 /// <param name="it"></param>
 /// <typeparam name="TEntity"></typeparam>
 /// <typeparam name="TMatchType"></typeparam>
-public sealed class EntityLookups<TEntity, TMatchType>(FrozenDictionary<TMatchType, FrozenDictionary<object, ImmutableHashSet<TEntity>>> it)
+public sealed class EntityLookups<TEntity, TMatchType>(FrozenDictionary<TMatchType, FrozenDictionary<object, FrozenSet<TEntity>>> it)
     where TEntity : notnull
     where TMatchType : Enum
 {
-    public FrozenDictionary<TMatchType, FrozenDictionary<object, ImmutableHashSet<TEntity>>> It { get; } = it;
+    public FrozenDictionary<TMatchType, FrozenDictionary<object, FrozenSet<TEntity>>> It { get; } = it;
 }

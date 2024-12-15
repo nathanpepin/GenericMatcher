@@ -1,82 +1,82 @@
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using GenericMatcher.Collections;
+using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.EntityMatch;
 
 public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
 {
-    /// <summary>
-    /// Creates a two-way mapping dictionary between seed entities and other entities based on match requirements.
-    /// </summary>
-    /// <param name="otherEntities">The entities to match against the seed entities.</param>
-    /// <param name="requirements">The match criteria defining the matching rules.</param>
-    /// <returns>A bidirectional frozen dictionary linking seed and other entities.</returns>
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(
         IEnumerable<TEntity> otherEntities, params IEnumerable<TMatchType> requirements)
     {
-        var seedToOther = CreateEntityToNullMapping(_seedEntities);
-        var otherToSeed = CreateEntityToNullMapping(otherEntities);
+        return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], false);
+    }
 
-        ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed);
+    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(
+        IEnumerable<TEntity> otherEntities, params IEnumerable<TMatchType> requirements)
+    {
+        return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], true);
+    }
+
+    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria)
+    {
+        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], false);
+    }
+
+    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria)
+    {
+        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], true);
+    }
+
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(
+        HashSet<TEntity> otherEntities, TMatchType[] requirements, bool errorIfDuplicate)
+    {
+        var seedToOther = new Dictionary<TEntity, TEntity?>();
+        var otherToSeed = new Dictionary<TEntity, TEntity?>();
+
+        ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed, errorIfDuplicate);
 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
-    /// <summary>
-    /// Creates a two-way mapping dictionary between seed and other entities based on tiered matching rules.
-    /// </summary>
-    /// <param name="otherEntities">The entities to match against the seed entities.</param>
-    /// <param name="tieredCriteria">Tiers of match requirements for applying stepwise matching.</param>
-    /// <returns>A bidirectional frozen dictionary linking seed and other entities.</returns>
-    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTiered(
-        IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(
+        HashSet<TEntity> otherEntities, TMatchType[][] tieredCriteria, bool errorIfDuplicate)
     {
-        var seedToOther = CreateEntityToNullMapping(_seedEntities);
-        var otherToSeed = CreateEntityToNullMapping(otherEntities);
+        var seedToOther = new Dictionary<TEntity, TEntity?>();
+        var otherToSeed = new Dictionary<TEntity, TEntity?>();
 
         foreach (var criteria in tieredCriteria)
         {
-            var unmatchedEntities = otherToSeed
-                .Where(pair => pair.Value == null)
-                .Select(pair => pair.Key);
+            foreach (var (key, value) in otherToSeed)
+            {
+                otherEntities.Remove(key);
+            }
 
-            ProcessMatches(unmatchedEntities, criteria, seedToOther, otherToSeed);
+            ProcessMatches(otherEntities, criteria, seedToOther, otherToSeed, errorIfDuplicate);
         }
 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
-    /// <summary>
-    /// Creates a dictionary mapping each entity to null initially.
-    /// </summary>
-    /// <param name="entities">The entities to include in the mapping.</param>
-    /// <returns>A dictionary where keys are entities and values are initially null.</returns>
-    private static Dictionary<TEntity, TEntity?> CreateEntityToNullMapping(IEnumerable<TEntity> entities)
-    {
-        return entities.ToDictionary(entity => entity, TEntity? (_) => null);
-    }
 
-    /// <summary>
-    /// Processes matches between entities based on the specified match criteria and updates the mappings.
-    /// </summary>
-    /// <param name="entities">The entities to process matches for.</param>
-    /// <param name="criteria">The matching criteria to apply.</param>
-    /// <param name="seedToOther">Mapping from seeds to others.</param>
-    /// <param name="otherToSeed">Mapping from others to seeds.</param>
-    private void ProcessMatches(
-        IEnumerable<TEntity> entities,
-        IEnumerable<TMatchType> criteria,
+    private void ProcessMatches(HashSet<TEntity> entities,
+        TMatchType[] criteria,
         Dictionary<TEntity, TEntity?> seedToOther,
-        Dictionary<TEntity, TEntity?> otherToSeed)
+        Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
     {
         foreach (var entity in entities)
         {
-            var match = FindMatches(entity, criteria).SingleOrDefault();
-            otherToSeed[entity] = match;
+            var match = errorIfDuplicate
+                ? FindMatches(entity, criteria).SingleOrDefault()
+                : FindMatches(entity, criteria).FirstOrDefault();
+
+            otherToSeed.Add(entity, match);
 
             if (match != null)
             {
-                seedToOther[match] = entity;
+                seedToOther.TryAdd(match, entity);
             }
         }
     }

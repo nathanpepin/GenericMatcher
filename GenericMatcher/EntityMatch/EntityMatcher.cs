@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using GenericMatcher.Collections;
 
@@ -11,18 +12,11 @@ namespace GenericMatcher.EntityMatch;
 public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
 {
     /// <summary>
-    /// Represents a lazily-initialized collection of entity lookups, mapping match types
-    /// to their corresponding grouped entity properties and match definitions.
-    /// Encapsulates data structures that facilitate efficient entity matching operations.
-    /// </summary>
-    private readonly Lazy<EntityLookups<TEntity, TMatchType>> _entityLookups;
-
-    /// <summary>
     /// Represents a lazy readonly instance of mapping strategies used for entity matching.
     /// Encapsulates the logic required to determine relationships between entities
     /// and their corresponding match types within a given context.
     /// </summary>
-    private readonly Lazy<MatchStrategies<TEntity, TMatchType>> _matchStrategies;
+    private readonly FrozenDictionary<TMatchType, IMatchDefinition<TEntity, TMatchType>> _matchStrategies;
 
     /// <summary>
     /// A collection of seed entities that serves as the primary dataset for entity matching operations.
@@ -31,5 +25,5 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
     /// This collection is immutable and initialized during the construction of the <see cref="EntityMatcher{TEntity, TMatchType}"/>.
     /// It is used as the baseline for matching other entities and constructing lookup dictionaries.
     /// </remarks>
-    private readonly ImmutableHashSet<TEntity> _seedEntities;
+    private readonly FrozenSet<TEntity> _seedEntities;
 }

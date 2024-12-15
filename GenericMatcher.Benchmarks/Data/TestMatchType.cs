@@ -1,4 +1,4 @@
-namespace GenericMatcher.Tests.EntityMatch;
+namespace GenericMatcher.Benchmarks.Data;
 
 public enum TestMatchType
 {

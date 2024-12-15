@@ -1,4 +1,4 @@
-namespace GenericMatcher.Tests.EntityMatch;
+namespace GenericMatcher.UnitTests.EntityMatch;
 
 public sealed record TestEntity(
     Guid Id,
