@@ -8,21 +8,20 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
-    public FrozenSet<TEntity> FindMatches(TEntity entity, params TMatchType[] matchRequirements)
+    public TEntity[] FindMatches(TEntity entity, params TMatchType[] matchRequirements)
     {
         ArgumentNullException.ThrowIfNull(entity);
         ArgumentNullException.ThrowIfNull(matchRequirements);
 
         if (matchRequirements.Length == 0)
-            return FrozenSet<TEntity>.Empty;
+            return [];
 
-        // ReSharper disable once InlineTemporaryVariable
         var strategies = _matchStrategies;
 
         var seedEntities = strategies[matchRequirements[0]].GetMatches(entity);
 
         if (seedEntities.Count == 0)
-            return FrozenSet<TEntity>.Empty;
+            return [];
 
         HashSet<TEntity> found = [..seedEntities];
 
@@ -30,12 +29,12 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         {
             var entities = strategies[matchRequirements[i]].GetMatches(entity);
             if (entities.Count == 0)
-                return FrozenSet<TEntity>.Empty;
+                return [];
 
             found.IntersectWith(entities);
 
             if (found.Count == 0)
-                return FrozenSet<TEntity>.Empty;
+                return [];
         }
 
         return [..found];
@@ -55,7 +54,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         foreach (var matchRequirements in matchRequirementGroupings)
         {
             var matches = FindMatches(entity, matchRequirements);
-            if (matches.Count > 0) continue;
+            if (matches.Length > 0) continue;
 
             return new MatchResult<TEntity, TMatchType>(matches, matchRequirements);
         }

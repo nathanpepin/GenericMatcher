@@ -1,27 +1,7 @@
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using GenericMatcher.Exceptions;
 
-namespace GenericMatcher;
-
-public interface IMatchDefinition<TEntity, out TMatchType>
-    where TEntity : class where TMatchType : Enum
-{
-    void Seed(FrozenSet<TEntity> entities);
-
-    TMatchType MatchType { get; }
-
-    FrozenSet<TEntity> GetMatches(TEntity entity);
-
-    bool EntitiesMatch(TEntity a, TEntity b);
-
-    bool AllEntitiesMatch(params IEnumerable<TEntity> entities);
-}
-
-public interface IMatchDefinitionString<in TEntity>
-{
-    Func<TEntity, ReadOnlySpan<char>> ConvertToSpan { get; }
-}
+namespace GenericMatcher.MatchDefinition;
 
 public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDefinition<TEntity, TMatchType>
     where TEntity : class

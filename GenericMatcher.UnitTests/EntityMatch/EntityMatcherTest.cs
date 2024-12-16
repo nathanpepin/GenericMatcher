@@ -3,6 +3,7 @@
 using System.Collections.Immutable;
 using FluentAssertions;
 using GenericMatcher.EntityMatch;
+using GenericMatcher.MatchDefinition;
 
 namespace GenericMatcher.UnitTests.EntityMatch;
 

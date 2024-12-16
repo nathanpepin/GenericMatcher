@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using GenericMatcher.Collections;
 using GenericMatcher.Exceptions;
+using GenericMatcher.MatchDefinition;
 
 namespace GenericMatcher.EntityMatch;
 

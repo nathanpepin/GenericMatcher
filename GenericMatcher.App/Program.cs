@@ -2,6 +2,7 @@
 using GenericMatcher;
 using GenericMatcher.App.Data;
 using GenericMatcher.EntityMatch;
+using GenericMatcher.MatchDefinition;
 
 List<Person> aPersons =
 [

@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using GenericMatcher.EntityMatch;
 
-namespace GenericMatcher.EntityMatch;
+namespace GenericMatcher.Collections;
 
 public static class DictionaryExtensions
 {

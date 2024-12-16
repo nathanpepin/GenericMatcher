@@ -1,6 +1,7 @@
 using System.Globalization;
 using Bogus;
 using GenericMatcher.Benchmarks.Data;
+using GenericMatcher.MatchDefinition;
 
 namespace GenericMatcher.Benchmarks.Faker;
 
@@ -33,7 +34,7 @@ public class Id : MatchDefinition<TestEntity, TestMatchType, Guid>
     public override Func<TestEntity, Guid> Conversion { get; } = static x => x.Id;
 }
 
-public class Name : MatchDefinition<TestEntity, TestMatchType, string>, IMatchDefinitionString<TestEntity>
+public class Name : MatchDefinition<TestEntity, TestMatchType, string>
 {
     public override TestMatchType MatchType => TestMatchType.Name;
     public override Func<TestEntity, string> Conversion { get; } = static x => x.Name.ToLowerInvariant();
