@@ -16,7 +16,6 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         EntityDictionary = null;
         IsSeeded = true;
     }
-
     private FrozenSet<TEntity> Entities { get; set; } = [];
     public abstract TMatchType MatchType { get; }
     public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }

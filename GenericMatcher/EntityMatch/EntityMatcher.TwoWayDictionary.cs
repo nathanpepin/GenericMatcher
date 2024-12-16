@@ -10,29 +10,29 @@ namespace GenericMatcher.EntityMatch;
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], false);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], true);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria)
+    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria)
     {
-        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], false);
+        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], false);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria,
+    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria,
         ParallelOptions? parallelOptions = null)
     {
-        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], true);
+        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], true);
     }
 
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(HashSet<TEntity> otherEntities, TMatchType[] requirements, bool errorIfDuplicate)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(HashSet<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements, bool errorIfDuplicate)
     {
         var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
         var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
@@ -42,14 +42,14 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(HashSet<TEntity> otherEntities, TMatchType[][] tieredCriteria, bool errorIfDuplicate)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(HashSet<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria, bool errorIfDuplicate)
     {
         var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
         var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
 
         foreach (var requirements in tieredCriteria)
         {
-            foreach (var (key, value) in otherToSeed)
+            foreach (var (key, _) in otherToSeed)
             {
                 otherEntities.Remove(key);
             }
@@ -62,7 +62,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
 
     private void ProcessMatches(HashSet<TEntity> entities,
-        TMatchType[] criteria,
+        ReadOnlySpan<TMatchType> criteria,
         Dictionary<TEntity, TEntity?> seedToOther,
         Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
     {

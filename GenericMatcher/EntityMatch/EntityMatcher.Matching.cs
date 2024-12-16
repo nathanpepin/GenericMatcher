@@ -8,10 +8,9 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
-    public TEntity[] FindMatches(TEntity entity, params TMatchType[] matchRequirements)
+    public TEntity[] FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        ArgumentNullException.ThrowIfNull(matchRequirements);
 
         if (matchRequirements.Length == 0)
             return [];
@@ -41,10 +40,9 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
     }
 
     public MatchResult<TEntity, TMatchType> FindMatchesTiered(TEntity entity,
-        params TMatchType[][] matchRequirementGroupings)
+        params ReadOnlySpan<TMatchType[]> matchRequirementGroupings)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        ArgumentNullException.ThrowIfNull(matchRequirementGroupings);
 
         if (matchRequirementGroupings.Length == 0)
         {
