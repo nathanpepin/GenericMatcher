@@ -5,7 +5,7 @@ using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.EntityMatch;
 
-public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
+public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     public EntityMatcher(
         IEnumerable<TEntity> seedEntities,
@@ -24,9 +24,14 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
             definition.Seed(_seedEntities);
         }
 
-        _matchStrategies = definitions.ToFrozenDictionary(x => x.MatchType);
+        _matchStrategies = definitions
+            .ToFrozenDictionary(x => x.MatchType);
+
+        _dictionaryCache = _seedEntities
+            .ToNullDictionary()
+            .ToImmutableDictionary();
     }
-    
+
     private static void ValidateMatchDefinitions(
         IMatchDefinition<TEntity, TMatchType>[] definitions)
     {

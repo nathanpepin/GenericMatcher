@@ -9,7 +9,7 @@ namespace GenericMatcher.EntityMatch;
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity to be matched. Must be a reference type.</typeparam>
 /// <typeparam name="TMatchType">The type of the match criteria. Must be an enum.</typeparam>
-public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
+public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     /// <summary>
     /// Represents a lazy readonly instance of mapping strategies used for entity matching.
@@ -26,4 +26,6 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
     /// It is used as the baseline for matching other entities and constructing lookup dictionaries.
     /// </remarks>
     private readonly FrozenSet<TEntity> _seedEntities;
+
+    private readonly ImmutableDictionary<TEntity, TEntity?> _dictionaryCache;
 }

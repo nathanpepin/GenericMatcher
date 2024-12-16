@@ -10,7 +10,7 @@ namespace GenericMatcher.Benchmarks.Benchmark;
 [Config(typeof(AntiVirusFriendlyConfig))]
 public class EntityMatcherBenchmarksTwoWayDictionary
 {
-    [Params(100, 1_000, 10_000)] public int EntityCount { get; set; }
+    [Params(100, 1_000, 10_000, 100_000)] public int EntityCount { get; set; }
 
     private EntityMatcher<TestEntity, TestMatchType>? _matcher;
     private TestEntity? _testEntity;
@@ -28,8 +28,9 @@ public class EntityMatcherBenchmarksTwoWayDictionary
     [Benchmark(Description = "Two-Way Dictionary")]
     public void TwoWayDictionary()
     {
-        _matcher!.CreateTwoWayMatchDictionary(_otherEntities!, TestMatchType.Id);
+        _matcher!.Value.CreateTwoWayMatchDictionary(_otherEntities!, [TestMatchType.Id]);
     }
+
 
     // [Benchmark(Description = "Two-Way Dictionary Tiered")]
     // public void TwoWayDictionaryTiere()

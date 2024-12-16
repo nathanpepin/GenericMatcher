@@ -8,6 +8,6 @@ namespace GenericMatcher;
 /// <param name="KeySelector"></param>
 /// <typeparam name="TEntity"></typeparam>
 /// <typeparam name="TMatchType"></typeparam>
-public sealed record MatchDefinition<TEntity, TMatchType>(
+public readonly record struct MatchDefinition<TEntity, TMatchType>(
     TMatchType MatchType,
     Func<TEntity, object> KeySelector);

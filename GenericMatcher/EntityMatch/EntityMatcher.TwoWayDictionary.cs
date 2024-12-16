@@ -1,21 +1,22 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using GenericMatcher.Collections;
 using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.EntityMatch;
 
-public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
+public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, params IEnumerable<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], false);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, params IEnumerable<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], true);
     }
@@ -25,36 +26,35 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
         return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], false);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria)
+    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<IEnumerable<TMatchType>> tieredCriteria,
+        ParallelOptions? parallelOptions = null)
     {
         return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria.Select(x => x.ToArray())], true);
     }
 
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(
-        HashSet<TEntity> otherEntities, TMatchType[] requirements, bool errorIfDuplicate)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(HashSet<TEntity> otherEntities, TMatchType[] requirements, bool errorIfDuplicate)
     {
-        var seedToOther = new Dictionary<TEntity, TEntity?>();
-        var otherToSeed = new Dictionary<TEntity, TEntity?>();
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
 
         ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed, errorIfDuplicate);
 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(
-        HashSet<TEntity> otherEntities, TMatchType[][] tieredCriteria, bool errorIfDuplicate)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(HashSet<TEntity> otherEntities, TMatchType[][] tieredCriteria, bool errorIfDuplicate)
     {
-        var seedToOther = new Dictionary<TEntity, TEntity?>();
-        var otherToSeed = new Dictionary<TEntity, TEntity?>();
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
 
-        foreach (var criteria in tieredCriteria)
+        foreach (var requirements in tieredCriteria)
         {
             foreach (var (key, value) in otherToSeed)
             {
                 otherEntities.Remove(key);
             }
 
-            ProcessMatches(otherEntities, criteria, seedToOther, otherToSeed, errorIfDuplicate);
+            ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed, errorIfDuplicate);
         }
 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);

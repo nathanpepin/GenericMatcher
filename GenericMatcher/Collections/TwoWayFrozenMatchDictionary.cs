@@ -9,7 +9,7 @@ namespace GenericMatcher.Collections;
 /// <param name="aToB"></param>
 /// <param name="bToA"></param>
 /// <typeparam name="TEntity"></typeparam>
-public sealed class TwoWayFrozenMatchDictionary<TEntity>(IDictionary<TEntity, TEntity?> aToB, IDictionary<TEntity, TEntity?> bToA)
+public readonly struct TwoWayFrozenMatchDictionary<TEntity>(IDictionary<TEntity, TEntity?> aToB, IDictionary<TEntity, TEntity?> bToA)
     where TEntity : notnull
 {
     public FrozenDictionary<TEntity, TEntity?> AToB { get; } = aToB.ToFrozenDictionary();

@@ -1,10 +1,12 @@
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Reflection.Metadata.Ecma335;
+using GenericMatcher.Collections;
 
 namespace GenericMatcher.EntityMatch;
 
-public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : Enum
+public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     public FrozenSet<TEntity> FindMatches(TEntity entity, params TMatchType[] matchRequirements)
     {
@@ -29,7 +31,7 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
             var entities = strategies[matchRequirements[i]].GetMatches(entity);
             if (entities.Count == 0)
                 return FrozenSet<TEntity>.Empty;
-            
+
             found.IntersectWith(entities);
 
             if (found.Count == 0)
@@ -38,7 +40,7 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
 
         return [..found];
     }
-    
+
     public MatchResult<TEntity, TMatchType> FindMatchesTiered(TEntity entity,
         params TMatchType[][] matchRequirementGroupings)
     {
@@ -55,11 +57,7 @@ public sealed partial class EntityMatcher<TEntity, TMatchType> where TEntity : c
             var matches = FindMatches(entity, matchRequirements);
             if (matches.Count > 0) continue;
 
-            return new MatchResult<TEntity, TMatchType>
-            {
-                Matches = matches,
-                MatchRequirementMet = matchRequirements
-            };
+            return new MatchResult<TEntity, TMatchType>(matches, matchRequirements);
         }
 
         return MatchResult<TEntity, TMatchType>.Empty;

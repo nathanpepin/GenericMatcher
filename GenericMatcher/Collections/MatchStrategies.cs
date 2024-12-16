@@ -9,7 +9,7 @@ namespace GenericMatcher.Collections;
 /// <param name="it"></param>
 /// <typeparam name="TEntity"></typeparam>
 /// <typeparam name="TMatchType"></typeparam>
-internal sealed class MatchStrategies<TEntity, TMatchType>(FrozenDictionary<TMatchType, Func<TEntity, FrozenSet<TEntity>>> it)
+internal readonly struct MatchStrategies<TEntity, TMatchType>(FrozenDictionary<TMatchType, Func<TEntity, FrozenSet<TEntity>>> it)
     where TEntity : notnull
     where TMatchType : Enum
 {
