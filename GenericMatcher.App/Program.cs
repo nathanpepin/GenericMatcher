@@ -41,6 +41,9 @@ var matcher = new EntityMatcher<Person, PersonMatchType>(aPersons, definitions);
 
 var j = matcher.FindMatches(aPersons[0], PersonMatchType.Ssn);
 
-var jj = matcher.CreateTwoWayMatchDictionary(bPersons, PersonMatchType.Ssn);
+var jj = matcher.CreateTwoWayMatchDictionary([..bPersons], [PersonMatchType.Ssn]);
+
+
+var jjf = matcher.CreateTwoWayMatchDictionary([..bPersons], [[PersonMatchType.DateOfBirth], [PersonMatchType.Ssn]]);
 
 ;

@@ -10,60 +10,66 @@ namespace GenericMatcher.EntityMatch;
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], false);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements)
+        IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
         return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], true);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria)
+    public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType[]> tieredCriteria)
     {
         return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], false);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria,
+    public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType[]> tieredCriteria,
         ParallelOptions? parallelOptions = null)
     {
         return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], true);
     }
 
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(HashSet<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements, bool errorIfDuplicate)
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(ReadOnlySpan<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements, bool errorIfDuplicate)
     {
         var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
-        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
+        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Length, ReferenceEqualityComparer<TEntity>.Instance);
 
-        ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed, errorIfDuplicate);
+        ProcessMatches(otherEntities, requirements, otherToSeed, errorIfDuplicate);
 
-        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
-    }
-
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(HashSet<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria, bool errorIfDuplicate)
-    {
-        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
-        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Count, ReferenceEqualityComparer<TEntity>.Instance);
-
-        foreach (var requirements in tieredCriteria)
+        foreach (var (key, value) in otherToSeed)
         {
-            foreach (var (key, _) in otherToSeed)
-            {
-                otherEntities.Remove(key);
-            }
-
-            ProcessMatches(otherEntities, requirements, seedToOther, otherToSeed, errorIfDuplicate);
+            if (value is null) continue;
+            seedToOther[value] = key;
         }
 
         return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
+    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(ReadOnlySpan<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria, bool errorIfDuplicate)
+    {
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Length, ReferenceEqualityComparer<TEntity>.Instance);
 
-    private void ProcessMatches(HashSet<TEntity> entities,
+        foreach (var requirements in tieredCriteria)
+        {
+            otherEntities = ProcessMatchesReturnUnmatched(otherEntities, requirements, otherToSeed, errorIfDuplicate);
+        }
+
+        foreach (var (key, value) in otherToSeed)
+        {
+            if (value is null) continue;
+            seedToOther[value] = key;
+        }
+        
+        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
+    }
+
+
+    private void ProcessMatches(ReadOnlySpan<TEntity> entities,
         ReadOnlySpan<TMatchType> criteria,
-        Dictionary<TEntity, TEntity?> seedToOther,
         Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
     {
         foreach (var entity in entities)
@@ -73,11 +79,30 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
                 : FindMatches(entity, criteria).FirstOrDefault();
 
             otherToSeed.Add(entity, match);
+        }
+    }
 
-            if (match != null)
+    private ReadOnlySpan<TEntity> ProcessMatchesReturnUnmatched(ReadOnlySpan<TEntity> entities,
+        ReadOnlySpan<TMatchType> criteria,
+        Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
+    {
+        Span<TEntity> notFound = new TEntity [entities.Length];
+        var notFoundIndex = 0;
+
+        foreach (var entity in entities)
+        {
+            var match = errorIfDuplicate
+                ? FindMatches(entity, criteria).SingleOrDefault()
+                : FindMatches(entity, criteria).FirstOrDefault();
+
+            otherToSeed.TryAdd(entity, match);
+
+            if (match is null)
             {
-                seedToOther.TryAdd(match, entity);
+                notFound[notFoundIndex++] = entity;
             }
         }
+
+        return notFound[..notFoundIndex];
     }
 }

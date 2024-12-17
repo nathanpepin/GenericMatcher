@@ -46,6 +46,6 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
             .ToArray();
 
         if (duplicateTypes.Length != 0)
-            throw new DuplicateMatchTypesException([..duplicateTypes]);
+            throw new DuplicateMatchTypesException(duplicateTypes);
     }
 }

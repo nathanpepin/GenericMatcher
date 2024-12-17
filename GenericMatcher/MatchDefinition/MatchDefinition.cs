@@ -28,7 +28,6 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
             throw new MatchDefinitionNotSeededException();
 
         EntityDictionary ??= Entities
-            .AsParallel()
             .GroupBy(x => Conversion(x))
             .ToFrozenDictionary(x => x.Key, x => x.ToFrozenSet());
 

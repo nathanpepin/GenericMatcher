@@ -10,19 +10,18 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 {
     public TEntity[] FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
     {
-        ArgumentNullException.ThrowIfNull(entity);
-
         if (matchRequirements.Length == 0)
             return [];
 
         var strategies = _matchStrategies;
 
-        var seedEntities = strategies[matchRequirements[0]].GetMatches(entity);
+        var seedEntities = strategies[matchRequirements[0]]
+            .GetMatches(entity)
+            .ToArray()
+            .AsSpan();
 
-        if (seedEntities.Count == 0)
+        if (seedEntities.Length == 0)
             return [];
-
-        HashSet<TEntity> found = [..seedEntities];
 
         for (var i = 1; i < matchRequirements.Length; i++)
         {
@@ -30,13 +29,25 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
             if (entities.Count == 0)
                 return [];
 
-            found.IntersectWith(entities);
+            Span<TEntity> found = new TEntity [seedEntities.Length];
+            var foundIndex = 0;
 
-            if (found.Count == 0)
+            for (var j = 0; j < seedEntities.Length; j++)
+            {
+                var seedEntity = seedEntities[j];
+
+                if (!entities.Contains(seedEntity)) continue;
+
+                found[foundIndex++] = seedEntity;
+            }
+
+            if (found.Length == 0)
                 return [];
+
+            seedEntities = found[..foundIndex];
         }
 
-        return [..found];
+        return [..seedEntities];
     }
 
     public MatchResult<TEntity, TMatchType> FindMatchesTiered(TEntity entity,
