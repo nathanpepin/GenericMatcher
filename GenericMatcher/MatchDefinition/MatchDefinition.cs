@@ -10,13 +10,14 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
 {
     public bool IsSeeded { get; private set; }
 
-    public void Seed(FrozenSet<TEntity> entities)
+    public void Seed(TEntity[] entities)
     {
         Entities = entities;
         EntityDictionary = null;
         IsSeeded = true;
     }
-    private FrozenSet<TEntity> Entities { get; set; } = [];
+
+    private ReadOnlyMemory<TEntity> Entities { get; set; }
     public abstract TMatchType MatchType { get; }
     public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }
 
@@ -27,15 +28,41 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         if (!IsSeeded)
             throw new MatchDefinitionNotSeededException();
 
-        EntityDictionary ??= Entities
-            .GroupBy(x => Conversion(x))
-            .ToFrozenDictionary(x => x.Key, x => x.ToFrozenSet());
-
         var key = Conversion(entity);
-        return EntityDictionary.TryGetValue(key, out var matches)
+
+        return GetEntityDictionary()
+            .TryGetValue(key, out var matches)
             ? matches
             : FrozenSet<TEntity>.Empty;
     }
+
+    private FrozenDictionary<TProperty, FrozenSet<TEntity>> GetEntityDictionary()
+    {
+        if (EntityDictionary is not null) return EntityDictionary;
+
+        var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(Entities.Length);
+
+        var entitiesSpan = Entities.Span;
+
+        for (var i = 0; i < Entities.Length; i++)
+        {
+            var it = entitiesSpan[i];
+            var property = Conversion(it);
+
+            if (dictionary.TryGetValue(property, out var value))
+            {
+                value.Add(it);
+            }
+            else
+            {
+                dictionary.Add(property, [it]);
+            }
+        }
+
+        return EntityDictionary = dictionary
+            .ToFrozenDictionary(x => x.Key, x => x.Value.ToFrozenSet());
+    }
+
 
     public bool EntitiesMatch(TEntity a, TEntity b)
     {

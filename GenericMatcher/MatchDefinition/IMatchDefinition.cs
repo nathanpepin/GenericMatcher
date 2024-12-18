@@ -5,7 +5,7 @@ namespace GenericMatcher.MatchDefinition;
 public interface IMatchDefinition<TEntity, out TMatchType>
     where TEntity : class where TMatchType : Enum
 {
-    void Seed(FrozenSet<TEntity> entities);
+    void Seed(TEntity[] entities);
 
     TMatchType MatchType { get; }
 

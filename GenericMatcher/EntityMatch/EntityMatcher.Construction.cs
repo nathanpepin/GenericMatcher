@@ -18,17 +18,17 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         var definitions = matchDefinitions.ToArray();
         ValidateMatchDefinitions(definitions);
 
-        _seedEntities = seedEntities.ToFrozenSet();
+        var seedEntitiesMaterialized = seedEntities.ToArray();
 
         foreach (var definition in definitions)
         {
-            definition.Seed(_seedEntities);
+            definition.Seed(seedEntitiesMaterialized);
         }
 
         _matchStrategies = definitions
             .ToFrozenDictionary(x => x.MatchType);
 
-        _dictionaryCache = _seedEntities
+        _dictionaryCache = seedEntitiesMaterialized
             .ToNullDictionary()
             .ToImmutableDictionary();
     }

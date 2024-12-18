@@ -19,14 +19,5 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
     /// </summary>
     private readonly FrozenDictionary<TMatchType, IMatchDefinition<TEntity, TMatchType>> _matchStrategies;
 
-    /// <summary>
-    /// A collection of seed entities that serves as the primary dataset for entity matching operations.
-    /// </summary>
-    /// <remarks>
-    /// This collection is immutable and initialized during the construction of the <see cref="EntityMatcher{TEntity, TMatchType}"/>.
-    /// It is used as the baseline for matching other entities and constructing lookup dictionaries.
-    /// </remarks>
-    private readonly FrozenSet<TEntity> _seedEntities;
-
     private readonly ImmutableDictionary<TEntity, TEntity?> _dictionaryCache;
 }
