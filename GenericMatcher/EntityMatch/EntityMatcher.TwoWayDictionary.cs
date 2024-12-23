@@ -9,100 +9,125 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
+    public FrozenDictionary<TEntity, TEntity[]> CreateMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
+    {
+        var otherEntitiesMaterialized = otherEntities.ToArray().AsSpan();
+        var requirementsMaterialized = requirements.ToArray().AsSpan();
+
+        var otherToSeed = new Dictionary<TEntity, TEntity[]>(otherEntitiesMaterialized.Length, ReferenceEqualityComparer<TEntity>.Instance);
+
+        for (var i = 0; i < otherEntitiesMaterialized.Length; i++)
+        {
+            var other = otherEntitiesMaterialized[i];
+            var matches = FindMatches(other, requirementsMaterialized);
+
+            if (matches.Length == 0)
+            {
+                otherToSeed.TryAdd(other, []);
+                continue;
+            }
+
+            otherToSeed.TryAdd(other, [..matches]);
+        }
+
+        return otherToSeed.ToFrozenDictionary();
+    }
+
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(
         IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
-        return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], false);
+        var otherToSeed = CreateMatchDictionary(otherEntities, requirements)
+            .ToFrozenDictionary(x => x.Key, v => v.Value.FirstOrDefault());
+
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+
+        foreach (var (key, values) in otherToSeed)
+        {
+            if (values is null) continue;
+
+            seedToOther[values] = key;
+        }
+
+        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(
         IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType> requirements)
     {
-        return CreateTwoWayMatchDictionaryBase([..otherEntities], [..requirements], true);
+        var otherToSeed = CreateMatchDictionary(otherEntities, requirements)
+            .ToFrozenDictionary(
+                x => x.Key,
+                v => v.Value.Length > 1
+                    ? throw new MoreThanOneMatchException()
+                    : v.Value.FirstOrDefault());
+
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+
+        foreach (var (key, values) in otherToSeed)
+        {
+            if (values is null) continue;
+
+            seedToOther[values] = key;
+        }
+
+        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType[]> tieredCriteria)
     {
-        return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], false);
+        var otherEntitiesMaterialized = otherEntities as TEntity[] ?? otherEntities.ToArray();
+        var otherToSeed = otherEntitiesMaterialized.ToNullDictionary();
+
+        HashSet<TEntity> remaining = [..otherEntitiesMaterialized];
+        HashSet<TEntity> found = [];
+        HashSet<TEntity> toRemove = [];
+
+        foreach (var requirement in tieredCriteria)
+        {
+            foreach (var item in remaining)
+            {
+                var matches = FindMatches(item, requirement);
+
+                var availableMatches = found.ExceptBySpan([..matches]);
+
+                switch (availableMatches)
+                {
+                    case 0:
+                        continue;
+                    case [var match]:
+                        toRemove.Add(item);
+                        found.Add(match);
+                        break;
+                    case [var match, ..]:
+                        toRemove.Add(item);
+                        found.Add(match);
+                        break;
+                }
+            }
+
+            foreach (var remove in toRemove)
+            {
+                remaining.Remove(remove);
+            }
+
+            toRemove.Clear();
+        }
+
+        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+
+        foreach (var (key, values) in otherToSeed)
+        {
+            if (values is null) continue;
+
+            seedToOther[values] = key;
+        }
+
+        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity> CreateStrictTwoWayMatchDictionary(IEnumerable<TEntity> otherEntities, IEnumerable<TMatchType[]> tieredCriteria,
         ParallelOptions? parallelOptions = null)
     {
         return CreateTwoWayMatchDictionaryTieredBase([..otherEntities], [..tieredCriteria], true);
-    }
-
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryBase(ReadOnlySpan<TEntity> otherEntities, ReadOnlySpan<TMatchType> requirements, bool errorIfDuplicate)
-    {
-        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
-        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Length, ReferenceEqualityComparer<TEntity>.Instance);
-
-        ProcessMatches(otherEntities, requirements, otherToSeed, errorIfDuplicate);
-
-        foreach (var (key, value) in otherToSeed)
-        {
-            if (value is null) continue;
-            seedToOther[value] = key;
-        }
-
-        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
-    }
-
-    private TwoWayFrozenMatchDictionary<TEntity> CreateTwoWayMatchDictionaryTieredBase(ReadOnlySpan<TEntity> otherEntities, ReadOnlySpan<TMatchType[]> tieredCriteria, bool errorIfDuplicate)
-    {
-        var seedToOther = new Dictionary<TEntity, TEntity?>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
-        var otherToSeed = new Dictionary<TEntity, TEntity?>(otherEntities.Length, ReferenceEqualityComparer<TEntity>.Instance);
-
-        foreach (var requirements in tieredCriteria)
-        {
-            otherEntities = ProcessMatchesReturnUnmatched(otherEntities, requirements, otherToSeed, errorIfDuplicate);
-        }
-
-        foreach (var (key, value) in otherToSeed)
-        {
-            if (value is null) continue;
-            seedToOther[value] = key;
-        }
-        
-        return new TwoWayFrozenMatchDictionary<TEntity>(seedToOther, otherToSeed);
-    }
-
-
-    private void ProcessMatches(ReadOnlySpan<TEntity> entities,
-        ReadOnlySpan<TMatchType> criteria,
-        Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
-    {
-        foreach (var entity in entities)
-        {
-            var match = errorIfDuplicate
-                ? FindMatches(entity, criteria).SingleOrDefault()
-                : FindMatches(entity, criteria).FirstOrDefault();
-
-            otherToSeed.Add(entity, match);
-        }
-    }
-
-    private ReadOnlySpan<TEntity> ProcessMatchesReturnUnmatched(ReadOnlySpan<TEntity> entities,
-        ReadOnlySpan<TMatchType> criteria,
-        Dictionary<TEntity, TEntity?> otherToSeed, bool errorIfDuplicate)
-    {
-        Span<TEntity> notFound = new TEntity [entities.Length];
-        var notFoundIndex = 0;
-
-        foreach (var entity in entities)
-        {
-            var match = errorIfDuplicate
-                ? FindMatches(entity, criteria).SingleOrDefault()
-                : FindMatches(entity, criteria).FirstOrDefault();
-
-            otherToSeed.TryAdd(entity, match);
-
-            if (match is null)
-            {
-                notFound[notFoundIndex++] = entity;
-            }
-        }
-
-        return notFound[..notFoundIndex];
     }
 }

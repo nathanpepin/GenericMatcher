@@ -101,4 +101,20 @@ public static class DictionaryExtensions
 
         return output;
     }
+
+    public static ReadOnlySpan<T> ExceptBySpan<T>(this HashSet<T> it, ReadOnlySpan<T> other)
+    {
+        Span<T> output = new T[other.Length];
+        var count = 0;
+
+        for (var i = 0; i < other.Length; i++)
+        {
+            var entity = other[i];
+            if (it.Contains(entity)) continue;
+
+            output[i++] = entity;
+        }
+
+        return output[..count];
+    }
 }

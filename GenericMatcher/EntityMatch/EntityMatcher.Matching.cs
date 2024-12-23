@@ -8,7 +8,7 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
-    public TEntity[] FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
+    public ReadOnlySpan<TEntity> FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
     {
         if (matchRequirements.Length == 0)
             return [];
@@ -47,7 +47,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
             seedEntities = found[..foundIndex];
         }
 
-        return [..seedEntities];
+        return seedEntities;
     }
 
     public MatchResult<TEntity, TMatchType> FindMatchesTiered(TEntity entity,
