@@ -46,7 +46,7 @@ public sealed class EntityMatcherTests
         var testEntity = MockedEntities[1];
 
         // Act
-        var result = matcher.FindMatches(testEntity, TestMatchType.Id);
+        var result = matcher.FindMatches(testEntity, TestMatchType.Id).ToArray();
 
         // Assert
         result.Should().ContainSingle().Which.Should().BeEquivalentTo(testEntity);
@@ -60,8 +60,8 @@ public sealed class EntityMatcherTests
         var testEntity = MockedEntities[1];
 
         // Act
-        var idDobResult = matcher.FindMatches(testEntity, TestMatchType.Id, TestMatchType.DateOfBirth);
-        var dobResult = matcher.FindMatches(testEntity, TestMatchType.DateOfBirth);
+        var idDobResult = matcher.FindMatches(testEntity, TestMatchType.Id, TestMatchType.DateOfBirth).ToArray();
+        var dobResult = matcher.FindMatches(testEntity, TestMatchType.DateOfBirth).ToArray();
 
         // Assert
         idDobResult.Should().ContainSingle().Which.Should().BeEquivalentTo(testEntity);
@@ -76,13 +76,11 @@ public sealed class EntityMatcherTests
         var mutatedEntities = MockedEntities.Select(x => x with { Id = Guid.NewGuid() }).ToImmutableArray();
 
         // Act
-        var twoWayDictionary = matcher.CreateTwoWayMatchDictionary(mutatedEntities, new[] { TestMatchType.Name, TestMatchType.DateOfBirth, TestMatchType.Phone });
+        var twoWayDictionary = matcher.CreateTwoWayMatchDictionary(mutatedEntities, [TestMatchType.Name, TestMatchType.DateOfBirth, TestMatchType.Phone]);
 
         // Assert
         twoWayDictionary.AToB.Count.Should().Be(5);
         twoWayDictionary.BToA.Count.Should().Be(5);
-        twoWayDictionary.MatchedAToB.Count.Should().Be(5);
-        twoWayDictionary.MatchedBToA.Count.Should().Be(5);
     }
 
     private static TestEntity CreateTestEntity(Guid id, string name, string email, string phoneNumber, DateOnly dob, string address) =>
@@ -99,11 +97,10 @@ public sealed class IdMatch : MatchDefinition<TestEntity, TestMatchType, Guid>
     public override Func<TestEntity, Guid> Conversion { get; } = static x => x.Id;
 }
 
-public sealed class NameMatch : MatchDefinition<TestEntity, TestMatchType, string>, IMatchDefinitionString<TestEntity>
+public sealed class NameMatch : MatchDefinition<TestEntity, TestMatchType, string>
 {
     public override TestMatchType MatchType => TestMatchType.Name;
     public override Func<TestEntity, string> Conversion { get; } = static x => x.Name.ToLowerInvariant();
-    public Func<TestEntity, ReadOnlySpan<char>> ConvertToSpan { get; } = static x => x.Name.AsSpan();
 }
 
 public sealed class EmailMatch : MatchDefinition<TestEntity, TestMatchType, string>

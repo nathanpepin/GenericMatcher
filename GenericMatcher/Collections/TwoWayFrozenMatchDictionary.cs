@@ -21,6 +21,24 @@ public readonly struct TwoWayFrozenMatchDictionary<TEntity, TMatchType>(
     public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> AToB { get; } = aToB.ToFrozenDictionary();
     public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> BToA { get; } = bToA.ToFrozenDictionary();
 
+    public Lazy<FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> AToBMatchedResults { get; } = new(() => aToB
+        .Where(x => x.Value.Match is not null)
+        .ToFrozenDictionary());
+
+    public Lazy<FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> BToAMatchedResults { get; } = new(() => bToA
+        .Where(x => x.Value.Match is not null)
+        .ToFrozenDictionary());
+
+    public Lazy<FrozenSet<TEntity>> AToBUnmatchedResults { get; } = new(() => aToB
+        .Where(x => x.Value.Match is null)
+        .Select(x => x.Key)
+        .ToFrozenSet());
+
+    public Lazy<FrozenSet<TEntity>> BToAUnmatchedResults { get; } = new(() => bToA
+        .Where(x => x.Value.Match is null)
+        .Select(x => x.Key)
+        .ToFrozenSet());
+
     public bool StrictMatching { get; } = strictMatching;
 
     public TEntity? GetMatchFromEither(TEntity key)

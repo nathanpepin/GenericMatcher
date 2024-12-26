@@ -37,7 +37,7 @@ public sealed class EntityMatcherTestsBogus
         var matcher = CreateMatcher([seedEntity]);
 
         // Act
-        var result = matcher.FindMatches(matchingEntity, TestMatchType.Name, TestMatchType.Email);
+        var result = matcher.FindMatches(matchingEntity, TestMatchType.Name, TestMatchType.Email).ToArray();
 
         // Assert
         result.Should().ContainSingle()
@@ -53,7 +53,7 @@ public sealed class EntityMatcherTestsBogus
         var matcher = CreateMatcher(seedEntities);
 
         // Act
-        var result = matcher.FindMatches(nonMatchingEntity, TestMatchType.Email, TestMatchType.Phone);
+        var result = matcher.FindMatches(nonMatchingEntity, TestMatchType.Email, TestMatchType.Phone).ToArray();
 
         // Assert
         result.Should().BeEmpty();
@@ -74,9 +74,9 @@ public sealed class EntityMatcherTestsBogus
         var result = matcher.CreateTwoWayMatchDictionary(matchingEntities, matchTypes);
 
         // Assert
-        result.MatchedAToB.Count.Should().Be(5);
-        result.UnmatchedA.Count.Should().Be(5);
-        result.UnmatchedB.Count.Should().Be(0);
+        result.AToBMatchedResults.Value.Count.Should().Be(5);
+        result.AToBUnmatchedResults.Value.Count.Should().Be(5);
+        result.BToAUnmatchedResults.Value.Count.Should().Be(0);
     }
 
     [Fact]
@@ -98,14 +98,14 @@ public sealed class EntityMatcherTestsBogus
 
         // Assert
         result.AToB.Count.Should().BeGreaterThan(0);
-        result.UnmatchedA.Count.Should().BeLessThan(seedEntities.Count);
+        result.AToBUnmatchedResults.Value.Count.Should().BeLessThan(seedEntities.Count);
     }
 
     // Helper Methods
     private static EntityMatcher<TestEntity, TestMatchType> CreateMatcher(IReadOnlyList<TestEntity> seedEntities) =>
         new(seedEntities, MatchDefinitions);
 
-    private static IReadOnlyList<TestEntity> GenerateEntities(int count) =>
+    private static TestEntity[] GenerateEntities(int count) =>
         EntityFaker.Generate(count).ToFrozenSet().ToArray();
 
     private static (IReadOnlyList<TestEntity> Seeds, IReadOnlyList<TestEntity> Matches) GenerateMatchingSets(
