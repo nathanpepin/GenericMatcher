@@ -19,5 +19,5 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
     /// </summary>
     private readonly FrozenDictionary<TMatchType, IMatchDefinition<TEntity, TMatchType>> _matchStrategies;
 
-    private readonly ImmutableDictionary<TEntity, TEntity?> _dictionaryCache;
+    private readonly ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> _dictionaryCache;
 }

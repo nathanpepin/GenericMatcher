@@ -29,7 +29,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
             .ToFrozenDictionary(x => x.MatchType);
 
         _dictionaryCache = seedEntitiesMaterialized
-            .ToNullDictionary()
+            .ToNullMatchingResults<TEntity, TMatchType>()
             .ToImmutableDictionary();
     }
 

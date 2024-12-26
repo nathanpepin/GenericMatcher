@@ -8,6 +8,16 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
+    public TEntity? FindFirstMatchOrDefault(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
+    {
+        return FindMatches(entity, matchRequirements) switch
+        {
+            [var match] => match,
+            [var match, ..] => match,
+            _ => null
+        };
+    }
+
     public ReadOnlySpan<TEntity> FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
     {
         if (matchRequirements.Length == 0)
@@ -48,26 +58,5 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         }
 
         return seedEntities;
-    }
-
-    public MatchResult<TEntity, TMatchType> FindMatchesTiered(TEntity entity,
-        params ReadOnlySpan<TMatchType[]> matchRequirementGroupings)
-    {
-        ArgumentNullException.ThrowIfNull(entity);
-
-        if (matchRequirementGroupings.Length == 0)
-        {
-            return MatchResult<TEntity, TMatchType>.Empty;
-        }
-
-        foreach (var matchRequirements in matchRequirementGroupings)
-        {
-            var matches = FindMatches(entity, matchRequirements);
-            if (matches.Length > 0) continue;
-
-            return new MatchResult<TEntity, TMatchType>(matches, matchRequirements);
-        }
-
-        return MatchResult<TEntity, TMatchType>.Empty;
     }
 }

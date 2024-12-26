@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using GenericMatcher.EntityMatch;
 
 namespace GenericMatcher.Collections;
 
@@ -9,11 +10,18 @@ namespace GenericMatcher.Collections;
 /// <param name="aToB"></param>
 /// <param name="bToA"></param>
 /// <typeparam name="TEntity"></typeparam>
-public readonly struct TwoWayFrozenMatchDictionary<TEntity>(IDictionary<TEntity, TEntity?> aToB, IDictionary<TEntity, TEntity?> bToA)
-    where TEntity : notnull
+/// <typeparam name="TMatchType"></typeparam>
+public readonly struct TwoWayFrozenMatchDictionary<TEntity, TMatchType>(
+    IDictionary<TEntity, MatchingResult<TEntity, TMatchType>> aToB,
+    IDictionary<TEntity, MatchingResult<TEntity, TMatchType>> bToA,
+    bool strictMatching)
+    where TEntity : class
+    where TMatchType : struct, Enum
 {
-    public FrozenDictionary<TEntity, TEntity?> AToB { get; } = aToB.ToFrozenDictionary();
-    public FrozenDictionary<TEntity, TEntity?> BToA { get; } = bToA.ToFrozenDictionary();
+    public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> AToB { get; } = aToB.ToFrozenDictionary();
+    public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> BToA { get; } = bToA.ToFrozenDictionary();
+
+    public bool StrictMatching { get; } = strictMatching;
 
     public TEntity? GetMatchFromEither(TEntity key)
     {
