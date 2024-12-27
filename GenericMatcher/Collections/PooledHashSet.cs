@@ -1,4 +1,4 @@
-namespace GenericMatcher.Collections.GenericMatcher.Collections;
+namespace GenericMatcher.Collections;
 
 public readonly ref struct PooledHashSet<T>(int? capacity = null, IEqualityComparer<T>? comparer = null)
 {
