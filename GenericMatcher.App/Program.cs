@@ -37,8 +37,8 @@ IMatchDefinition<Person, PersonMatchType>[] definitions =
 
 var matcher = new EntityMatcher<Person, PersonMatchType>(aPersons, definitions);
 
-var singleLookup = matcher.FindMatches(aPersons[0], PersonMatchType.Ssn);
-var singleMatch = matcher.FindFirstMatchOrDefault(aPersons[0], PersonMatchType.Ssn);
+var singleLookup = matcher.FindMatches(aPersons[0], [PersonMatchType.Ssn]);
+var singleMatch = matcher.FindFirstMatchOrDefault(aPersons[0], [PersonMatchType.Ssn]);
 var twoWayDictionary = matcher.CreateTwoWayMatchDictionary([..bPersons], PersonMatchType.Ssn);
 var twoWayStrictDictionary = matcher.CreateStrictTwoWayMatchDictionary([..bPersons], PersonMatchType.DateOfBirth, PersonMatchType.Ssn);
 var twoWayTieredDictionary = matcher.CreateTwoWayMatchDictionary([..bPersons], [PersonMatchType.DateOfBirth], [PersonMatchType.Ssn]);

@@ -43,7 +43,7 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         return Conversion(a).Equals(Conversion(b));
     }
 
-    public bool AllEntitiesMatch(params IEnumerable<TEntity> entities)
+    public bool AllEntitiesMatch(IEnumerable<TEntity> entities)
     {
         if (!IsSeeded)
             throw new MatchDefinitionNotSeededException();

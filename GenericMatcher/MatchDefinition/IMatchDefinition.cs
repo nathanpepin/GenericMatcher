@@ -12,5 +12,5 @@ public interface IMatchDefinition<TEntity, out TMatchType>
 
     bool EntitiesMatch(TEntity a, TEntity b);
 
-    bool AllEntitiesMatch(params IEnumerable<TEntity> entities);
+    bool AllEntitiesMatch(IEnumerable<TEntity> entities);
 }

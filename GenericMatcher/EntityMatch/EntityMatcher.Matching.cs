@@ -4,7 +4,7 @@ namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
-    public TEntity? FindFirstMatchOrDefault(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
+    public TEntity? FindFirstMatchOrDefault(TEntity entity, ReadOnlySpan<TMatchType> matchRequirements)
     {
         return FindMatches(entity, matchRequirements) switch
         {
@@ -14,7 +14,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         };
     }
 
-    public ReadOnlySpan<TEntity> FindMatches(TEntity entity, params ReadOnlySpan<TMatchType> matchRequirements)
+    public ReadOnlySpan<TEntity> FindMatches(TEntity entity, ReadOnlySpan<TMatchType> matchRequirements)
     {
         if (matchRequirements.Length == 0)
             return [];
