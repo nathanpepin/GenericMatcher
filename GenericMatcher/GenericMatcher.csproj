@@ -4,6 +4,21 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <Authors>Nathan Pepin</Authors>
+        <Title>Generic Matcher</Title>
+        <Company>Nathan pepin</Company>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Product>Nathan Pepin</Product>
+        <Description>Creates configurable generic matching.</Description>
+        <PackageProjectUrl>https://github.com/nathanpepin/GenericMatcher</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>matching</PackageTags>
+        <PackageId>GenericMatcher</PackageId>
+        <Copyright>Nathan Pepin</Copyright>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <IncludeBuildOutput>true</IncludeBuildOutput>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
 </Project>

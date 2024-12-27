@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
@@ -39,22 +40,29 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
             if (entities.Count == 0)
                 return [];
 
-            Span<TEntity> found = new TEntity [seedEntities.Length];
-            var foundIndex = 0;
+            var foundArray = ArrayPool<TEntity>.Shared.Rent(seedEntities.Length);
+            var found = foundArray.AsSpan();
 
-            for (var j = 0; j < seedEntities.Length; j++)
+            try
             {
-                var seedEntity = seedEntities[j];
+                var foundIndex = 0;
 
-                if (!entities.Contains(seedEntity)) continue;
+                foreach (var seedEntity in seedEntities)
+                {
+                    if (!entities.Contains(seedEntity)) continue;
 
-                found[foundIndex++] = seedEntity;
+                    found[foundIndex++] = seedEntity;
+                }
+
+                if (found.Length == 0)
+                    return [];
+
+                seedEntities = found[..foundIndex];
             }
-
-            if (found.Length == 0)
-                return [];
-
-            seedEntities = found[..foundIndex];
+            finally
+            {
+                ArrayPool<TEntity>.Shared.Return(foundArray);
+            }
         }
 
         return seedEntities;

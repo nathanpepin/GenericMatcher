@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Frozen;
 using GenericMatcher.Collections;
 using GenericMatcher.Exceptions;
@@ -9,77 +10,113 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     where TMatchType : struct, Enum
 {
     public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities,
-        params IEnumerable<TMatchType> requirements)
+        TEntity[] otherEntities,
+        params TMatchType[] requirements)
     {
         return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, strict: false);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateStrictTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities,
-        params IEnumerable<TMatchType> requirements)
+        TEntity[] otherEntities,
+        params TMatchType[] requirements)
     {
         return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, strict: true);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
-        IEnumerable<TEntity> otherEntities,
-        params IEnumerable<TMatchType[]> tieredCriteria)
+        TEntity[] otherEntities,
+        params TMatchType[][] tieredCriteria)
     {
-        var remaining = new HashSet<TEntity>(otherEntities);
-        var otherToSeed = otherEntities.ToNullMatchingResults<TEntity, TMatchType>();
-        var seedToOther = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+        var remaining = GetSeededHashSetFromPool(otherEntities);
+        var otherToSeed = GetSeededDictionaryFromPool(otherEntities);
+        var seedToOther = GetDictionaryFromPool(_dictionaryCache.Count);
+
         var hasDuplicates = false;
 
-        foreach (var requirements in tieredCriteria)
+        try
         {
-            if (remaining.Count == 0) break;
+            foreach (var requirements in tieredCriteria)
+            {
+                if (remaining.Count == 0) break;
 
-            var matches = FindMatchesForBatch(remaining, requirements, strict: false);
-            ProcessMatches(matches, remaining, otherToSeed, ref hasDuplicates);
+                var matches = FindMatchesForBatch(remaining, requirements, strict: false);
+
+                try
+                {
+                    ProcessMatches(matches, remaining, otherToSeed, ref hasDuplicates);
+                }
+                finally
+                {
+                    ReturnDictionaryToPool(matches);
+                }
+            }
+
+
+            BuildReverseMapping(otherToSeed, seedToOther);
+
+            var output = new TwoWayFrozenMatchDictionary<TEntity, TMatchType>(seedToOther, otherToSeed, hasDuplicates);
+            return output;
         }
-
-        BuildReverseMapping(otherToSeed, seedToOther);
-
-        return new TwoWayFrozenMatchDictionary<TEntity, TMatchType>(seedToOther, otherToSeed, hasDuplicates);
+        finally
+        {
+            ReturnHashSetToPool(remaining);
+            ReturnDictionaryToPool(seedToOther);
+            ReturnDictionaryToPool(otherToSeed);
+        }
     }
 
     private TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionaryInternal(
-        IEnumerable<TEntity> otherEntities,
-        IEnumerable<TMatchType> requirements,
+        TEntity[] otherEntities,
+        TMatchType[] requirements,
         bool strict)
     {
-        var remaining = new HashSet<TEntity>(otherEntities);
-        var otherToSeed = otherEntities.ToNullMatchingResults<TEntity, TMatchType>();
-        var seedToOther = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_dictionaryCache, ReferenceEqualityComparer<TEntity>.Instance);
+        var remaining = GetSeededHashSetFromPool(otherEntities);
+        var otherToSeed = GetSeededDictionaryFromPool(otherEntities);
+        var seedToOther = GetDictionaryFromPool(_dictionaryCache.Count);
         var hasDuplicates = false;
 
-        while (remaining.Count > 0)
+        try
         {
-            var previousCount = remaining.Count;
-            var matches = FindMatchesForBatch(remaining, requirements, strict);
+            while (remaining.Count > 0)
+            {
+                var previousCount = remaining.Count;
 
-            ProcessMatches(matches, remaining, otherToSeed, ref hasDuplicates);
+                var matches = FindMatchesForBatch(remaining, requirements, strict);
 
-            // If no new matches were found in this iteration, break
-            if (previousCount == remaining.Count) break;
+                try
+                {
+                    ProcessMatches(matches, remaining, otherToSeed, ref hasDuplicates);
+                }
+                finally
+                {
+                    ReturnDictionaryToPool(matches);
+                }
+
+                if (previousCount == remaining.Count) break;
+            }
+
+            BuildReverseMapping(otherToSeed, seedToOther);
+
+            return new TwoWayFrozenMatchDictionary<TEntity, TMatchType>(seedToOther, otherToSeed, hasDuplicates);
         }
-
-        BuildReverseMapping(otherToSeed, seedToOther);
-
-        return new TwoWayFrozenMatchDictionary<TEntity, TMatchType>(seedToOther, otherToSeed, hasDuplicates);
+        finally
+        {
+            ReturnHashSetToPool(remaining);
+            ReturnDictionaryToPool(seedToOther);
+            ReturnDictionaryToPool(otherToSeed);
+        }
     }
 
     private Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> FindMatchesForBatch(
         HashSet<TEntity> entities,
-        IEnumerable<TMatchType> requirements,
+        TMatchType[] requirements,
         bool strict)
     {
-        var matchLookup = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(entities.Count);
+        var matchLookup = GetDictionaryFromPool(entities.Count);
 
         foreach (var entity in entities)
         {
-            var matches = FindMatches(entity, requirements.ToArray());
+            var matches = FindMatches(entity, requirements);
             var result = matches switch
             {
                 [] => MatchingResult<TEntity, TMatchType>.Empty,
@@ -124,5 +161,49 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
             var reverseMatch = new MatchingResult<TEntity, TMatchType>(key, value.Requirements, value.IsDuplicate);
             seedToOther[value.Match] = reverseMatch;
         }
+    }
+
+    private static Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetDictionaryFromPool(int count)
+    {
+        return DictionaryPool<TEntity, MatchingResult<TEntity, TMatchType>>.Get(count);
+    }
+
+    private static Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetSeededDictionaryFromPool(TEntity[] entities)
+    {
+        var output = DictionaryPool<TEntity, MatchingResult<TEntity, TMatchType>>.Get(entities.Length);
+
+        foreach (var entity in entities)
+        {
+            output[entity] = MatchingResult<TEntity, TMatchType>.Empty;
+        }
+
+        return output;
+    }
+
+    private static HashSet<TEntity> GetHashSetFromPool(int length)
+    {
+        return HashSetPool<TEntity>.Get(length);
+    }
+
+    private static HashSet<TEntity> GetSeededHashSetFromPool(TEntity[] entities)
+    {
+        var output = HashSetPool<TEntity>.Get(entities.Length);
+
+        foreach (var entity in entities)
+        {
+            output.Add(entity);
+        }
+
+        return output;
+    }
+
+    private static void ReturnDictionaryToPool(Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> dictionary)
+    {
+        DictionaryPool<TEntity, MatchingResult<TEntity, TMatchType>>.Return(dictionary);
+    }
+
+    private static void ReturnHashSetToPool(HashSet<TEntity> hashSet)
+    {
+        HashSetPool<TEntity>.Return(hashSet);
     }
 }
