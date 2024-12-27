@@ -1,5 +1,3 @@
-using System.Buffers;
-using System.Collections.Frozen;
 using GenericMatcher.Collections;
 using GenericMatcher.Exceptions;
 
@@ -13,14 +11,14 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         TEntity[] otherEntities,
         params TMatchType[] requirements)
     {
-        return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, strict: false);
+        return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, false);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateStrictTwoWayMatchDictionary(
         TEntity[] otherEntities,
         params TMatchType[] requirements)
     {
-        return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, strict: true);
+        return CreateTwoWayMatchDictionaryInternal(otherEntities, requirements, true);
     }
 
     public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
@@ -39,7 +37,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
             {
                 if (remaining.Count == 0) break;
 
-                var matches = FindMatchesForBatch(remaining, requirements, strict: false);
+                var matches = FindMatchesForBatch(remaining, requirements, false);
 
                 try
                 {
@@ -172,10 +170,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     {
         var output = DictionaryPool<TEntity, MatchingResult<TEntity, TMatchType>>.Get(entities.Length);
 
-        foreach (var entity in entities)
-        {
-            output[entity] = MatchingResult<TEntity, TMatchType>.Empty;
-        }
+        foreach (var entity in entities) output[entity] = MatchingResult<TEntity, TMatchType>.Empty;
 
         return output;
     }
@@ -189,10 +184,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     {
         var output = HashSetPool<TEntity>.Get(entities.Length);
 
-        foreach (var entity in entities)
-        {
-            output.Add(entity);
-        }
+        foreach (var entity in entities) output.Add(entity);
 
         return output;
     }

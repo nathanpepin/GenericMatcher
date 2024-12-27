@@ -24,9 +24,16 @@ public readonly struct MatchingResult<TEntity, TMatchType>
 
     public TEntity? Match { get; }
     public ImmutableArray<TMatchType> Requirements { get; }
-    
+
     public bool IsDuplicate { get; }
 
-    public static implicit operator bool(MatchingResult<TEntity, TMatchType> result) => result.Match is null;
-    public static implicit operator TEntity?(MatchingResult<TEntity, TMatchType> result) => result.Match;
+    public static implicit operator bool(MatchingResult<TEntity, TMatchType> result)
+    {
+        return result.Match is null;
+    }
+
+    public static implicit operator TEntity?(MatchingResult<TEntity, TMatchType> result)
+    {
+        return result.Match;
+    }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-using GenericMatcher;
-using GenericMatcher.App.Data;
+﻿using GenericMatcher.App.Data;
 using GenericMatcher.EntityMatch;
 using GenericMatcher.MatchDefinition;
 
@@ -33,7 +31,7 @@ IMatchDefinition<Person, PersonMatchType>[] definitions =
     new PersonSnnMatchDefinition(),
     new PersonIsEmployeeMatchDefinition(),
     new PersonDepSnnMatchDefinition(),
-    new PersonDobMatchDefinition(),
+    new PersonDobMatchDefinition()
 ];
 
 

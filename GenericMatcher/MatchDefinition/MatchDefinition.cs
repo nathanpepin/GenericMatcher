@@ -10,6 +10,11 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
 {
     public bool IsSeeded { get; private set; }
 
+    private ReadOnlyMemory<TEntity> Entities { get; set; }
+    public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }
+
+    public abstract Func<TEntity, TProperty> Conversion { get; }
+
     public void Seed(TEntity[] entities)
     {
         Entities = entities;
@@ -17,11 +22,7 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         IsSeeded = true;
     }
 
-    private ReadOnlyMemory<TEntity> Entities { get; set; }
     public abstract TMatchType MatchType { get; }
-    public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }
-
-    public abstract Func<TEntity, TProperty> Conversion { get; }
 
     public FrozenSet<TEntity> GetMatches(TEntity entity)
     {
@@ -34,33 +35,6 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
             .TryGetValue(key, out var matches)
             ? matches
             : FrozenSet<TEntity>.Empty;
-    }
-
-    private FrozenDictionary<TProperty, FrozenSet<TEntity>> GetEntityDictionary()
-    {
-        if (EntityDictionary is not null) return EntityDictionary;
-
-        var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(Entities.Length);
-
-        var entitiesSpan = Entities.Span;
-
-        for (var i = 0; i < Entities.Length; i++)
-        {
-            var it = entitiesSpan[i];
-            var property = Conversion(it);
-
-            if (dictionary.TryGetValue(property, out var value))
-            {
-                value.Add(it);
-            }
-            else
-            {
-                dictionary.Add(property, [it]);
-            }
-        }
-
-        return EntityDictionary = dictionary
-            .ToFrozenDictionary(x => x.Key, x => x.Value.ToFrozenSet());
     }
 
 
@@ -82,11 +56,32 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         var firstEntity = enumerator.Current;
 
         while (enumerator.MoveNext())
-        {
             if (!EntitiesMatch(firstEntity, enumerator.Current))
                 return false;
-        }
 
         return true;
+    }
+
+    private FrozenDictionary<TProperty, FrozenSet<TEntity>> GetEntityDictionary()
+    {
+        if (EntityDictionary is not null) return EntityDictionary;
+
+        var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(Entities.Length);
+
+        var entitiesSpan = Entities.Span;
+
+        for (var i = 0; i < Entities.Length; i++)
+        {
+            var it = entitiesSpan[i];
+            var property = Conversion(it);
+
+            if (dictionary.TryGetValue(property, out var value))
+                value.Add(it);
+            else
+                dictionary.Add(property, [it]);
+        }
+
+        return EntityDictionary = dictionary
+            .ToFrozenDictionary(x => x.Key, x => x.Value.ToFrozenSet());
     }
 }

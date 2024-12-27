@@ -1,6 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Order;
 using GenericMatcher.Benchmarks.Data;
 using GenericMatcher.Benchmarks.Faker;
 using GenericMatcher.EntityMatch;
@@ -10,11 +8,10 @@ namespace GenericMatcher.Benchmarks.Benchmark;
 [Config(typeof(AntiVirusFriendlyConfig))]
 public class EntityMatcherBenchmarksTwoWayDictionary
 {
-    [Params(100, 1_000, 10_000, 100_000)] public int EntityCount { get; set; }
-
     private EntityMatcher<TestEntity, TestMatchType>? _matcher;
-    private TestEntity? _testEntity;
     private List<TestEntity>? _otherEntities;
+    private TestEntity? _testEntity;
+    [Params(100, 1_000, 10_000, 100_000)] public int EntityCount { get; set; }
 
     [GlobalSetup]
     public void Setup()
@@ -28,7 +25,7 @@ public class EntityMatcherBenchmarksTwoWayDictionary
     [Benchmark(Description = "Two-Way Dictionary")]
     public void TwoWayDictionary()
     {
-        _matcher!.Value.CreateTwoWayMatchDictionary([.._otherEntities!], [TestMatchType.Id]);
+        _matcher!.Value.CreateTwoWayMatchDictionary([.._otherEntities!], TestMatchType.Id);
     }
 
 

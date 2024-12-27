@@ -20,10 +20,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
         var seedEntitiesMaterialized = seedEntities.ToArray();
 
-        foreach (var definition in definitions)
-        {
-            definition.Seed(seedEntitiesMaterialized);
-        }
+        foreach (var definition in definitions) definition.Seed(seedEntitiesMaterialized);
 
         _matchStrategies = definitions
             .ToFrozenDictionary(x => x.MatchType);

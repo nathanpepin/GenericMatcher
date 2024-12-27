@@ -1,6 +1,3 @@
-using System.Collections.Frozen;
-using System.Collections.Immutable;
-
 namespace GenericMatcher;
 
 public readonly struct MatchResult<TEntity, TMatchType>(ReadOnlySpan<TEntity> matches, TMatchType[] requirements)

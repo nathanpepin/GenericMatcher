@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Collections.Immutable;
 using GenericMatcher.EntityMatch;
 
 namespace GenericMatcher.Collections;

@@ -1,10 +1,9 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace GenericMatcher.Collections;
 
 /// <summary>
-/// Provides a pooled dictionary implementation for high-performance scenarios
+///     Provides a pooled dictionary implementation for high-performance scenarios
 /// </summary>
 public sealed class DictionaryPool<TKey, TValue> where TKey : notnull
 {
@@ -17,7 +16,7 @@ public sealed class DictionaryPool<TKey, TValue> where TKey : notnull
     }
 
     /// <summary>
-    /// Gets a dictionary from the pool with an optional initial capacity
+    ///     Gets a dictionary from the pool with an optional initial capacity
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Dictionary<TKey, TValue> Get(int? capacity = null)
@@ -33,7 +32,7 @@ public sealed class DictionaryPool<TKey, TValue> where TKey : notnull
     }
 
     /// <summary>
-    /// Returns a dictionary to the pool
+    ///     Returns a dictionary to the pool
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Return(Dictionary<TKey, TValue> dictionary)

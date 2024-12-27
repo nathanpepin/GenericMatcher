@@ -1,4 +1,3 @@
-using System.Globalization;
 using Bogus;
 using GenericMatcher.Benchmarks.Data;
 using GenericMatcher.MatchDefinition;
@@ -10,12 +9,12 @@ public static class EntityGenerator
     public static readonly Faker<TestEntity> Faker =
         new Faker<TestEntity>()
             .CustomInstantiator(f => new TestEntity(
-                Id: Guid.NewGuid(),
-                Name: f.Name.FullName(),
-                Email: f.Internet.Email(),
-                PhoneNumber: f.Phone.PhoneNumber(),
-                DateOfBirth: DateOnly.FromDateTime(f.Date.Past(50)),
-                Address: f.Address.FullAddress()));
+                Guid.NewGuid(),
+                f.Name.FullName(),
+                f.Internet.Email(),
+                f.Phone.PhoneNumber(),
+                DateOnly.FromDateTime(f.Date.Past(50)),
+                f.Address.FullAddress()));
 
     public static readonly IReadOnlyList<IMatchDefinition<TestEntity, TestMatchType>> MatchDefinitions =
     [

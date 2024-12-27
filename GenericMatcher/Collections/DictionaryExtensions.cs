@@ -1,6 +1,3 @@
-using System.Collections.Concurrent;
-using System.Collections.Frozen;
-using System.Runtime.CompilerServices;
 using GenericMatcher.EntityMatch;
 
 namespace GenericMatcher.Collections;
@@ -17,10 +14,7 @@ public static class DictionaryExtensions
 
         var dictionary = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(items.Length, ReferenceEqualityComparer<TEntity>.Instance);
 
-        foreach (var item in items)
-        {
-            dictionary.Add(item, new MatchingResult<TEntity, TMatchType>());
-        }
+        foreach (var item in items) dictionary.Add(item, new MatchingResult<TEntity, TMatchType>());
 
         return dictionary;
     }
@@ -36,10 +30,7 @@ public static class DictionaryExtensions
 
         var dictionary = new Dictionary<T, T?>(items.Length, ReferenceEqualityComparer<T>.Instance);
 
-        foreach (var item in items)
-        {
-            dictionary.Add(item, null);
-        }
+        foreach (var item in items) dictionary.Add(item, null);
 
         return dictionary;
     }

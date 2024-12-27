@@ -1,14 +1,7 @@
-using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
-using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
-using GenericMatcher.Benchmarks.Data;
-using GenericMatcher.Benchmarks.Faker;
-using GenericMatcher.EntityMatch;
-using Perfolizer.Horology;
 
 namespace GenericMatcher.Benchmarks.Benchmark;
 
@@ -21,7 +14,7 @@ public class AntiVirusFriendlyConfig : ManualConfig
             .WithIterationCount(3) // Reduce measurement iterations
             .WithToolchain(InProcessNoEmitToolchain.Instance)
             .WithLaunchCount(1)); // Single launch is sufficient for most cases
-        
+
         AddDiagnoser(MemoryDiagnoser.Default);
     }
 }

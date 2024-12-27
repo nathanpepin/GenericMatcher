@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-using System.Xml.Schema;
 using GenericMatcher.MatchDefinition;
 
 namespace GenericMatcher.App.Data;
