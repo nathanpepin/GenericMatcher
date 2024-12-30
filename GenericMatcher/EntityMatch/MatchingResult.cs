@@ -10,22 +10,18 @@ public readonly struct MatchingResult<TEntity, TMatchType>
 
     public MatchingResult()
     {
-        IsDuplicate = false;
         Match = null;
         Requirements = ImmutableArray<TMatchType>.Empty;
     }
 
-    public MatchingResult(TEntity match, IEnumerable<TMatchType> matches, bool isDuplicate)
+    public MatchingResult(TEntity match, IEnumerable<TMatchType> matches)
     {
         Match = match;
-        IsDuplicate = isDuplicate;
         Requirements = [..matches];
     }
 
     public TEntity? Match { get; }
     public ImmutableArray<TMatchType> Requirements { get; }
-
-    public bool IsDuplicate { get; }
 
     public static implicit operator bool(MatchingResult<TEntity, TMatchType> result)
     {

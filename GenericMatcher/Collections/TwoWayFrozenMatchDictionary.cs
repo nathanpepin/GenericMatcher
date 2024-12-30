@@ -12,34 +12,30 @@ namespace GenericMatcher.Collections;
 /// <typeparam name="TMatchType"></typeparam>
 public readonly struct TwoWayFrozenMatchDictionary<TEntity, TMatchType>(
     IDictionary<TEntity, MatchingResult<TEntity, TMatchType>> aToB,
-    IDictionary<TEntity, MatchingResult<TEntity, TMatchType>> bToA,
-    bool strictMatching)
+    IDictionary<TEntity, MatchingResult<TEntity, TMatchType>> bToA)
     where TEntity : class
     where TMatchType : struct, Enum
 {
     public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> AToB { get; } = aToB.ToFrozenDictionary();
     public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> BToA { get; } = bToA.ToFrozenDictionary();
 
-    public Lazy<FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> AToBMatchedResults { get; } = new(() => aToB
+    public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> AToBMatchedResults { get; } = aToB
         .Where(x => x.Value.Match is not null)
-        .ToFrozenDictionary());
+        .ToFrozenDictionary();
 
-    public Lazy<FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> BToAMatchedResults { get; } = new(() => bToA
+    public FrozenDictionary<TEntity, MatchingResult<TEntity, TMatchType>> BToAMatchedResults { get; } = bToA
         .Where(x => x.Value.Match is not null)
-        .ToFrozenDictionary());
+        .ToFrozenDictionary();
 
-    public Lazy<FrozenSet<TEntity>> AToBUnmatchedResults { get; } = new(() => aToB
+    public FrozenSet<TEntity> AToBUnmatchedResults { get; } = aToB
         .Where(x => x.Value.Match is null)
         .Select(x => x.Key)
-        .ToFrozenSet());
+        .ToFrozenSet();
 
-    public Lazy<FrozenSet<TEntity>> BToAUnmatchedResults { get; } = new(() => bToA
+    public FrozenSet<TEntity> BToAUnmatchedResults { get; } = bToA
         .Where(x => x.Value.Match is null)
         .Select(x => x.Key)
-        .ToFrozenSet());
-
-    public bool StrictMatching { get; } = strictMatching;
-
+        .ToFrozenSet();
     public TEntity? GetMatchFromEither(TEntity key)
     {
         return AToB.TryGetValue(key, out var value) ? value : BToA.TryGetValue(key, out value) ? value : default;
