@@ -1,11 +1,15 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace GenericMatcher.EntityMatch;
 
 public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TEntity? FindFirstMatchOrDefault(TEntity entity, ReadOnlySpan<TMatchType> matchRequirements)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         return FindMatches(entity, matchRequirements) switch
         {
             [var match] => match,
@@ -16,11 +20,12 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
     public ReadOnlySpan<TEntity> FindMatches(TEntity entity, ReadOnlySpan<TMatchType> matchRequirements)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         if (matchRequirements.Length == 0)
             return [];
 
-        var strategies = _matchStrategies;
-
+        var strategies = MatchStrategies;
         var seedEntities = strategies[matchRequirements[0]]
             .GetMatches(entity)
             .ToArray()
@@ -31,32 +36,30 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
         for (var i = 1; i < matchRequirements.Length; i++)
         {
-            var entities = strategies[matchRequirements[i]].GetMatches(entity);
-            if (entities.Count == 0)
+            var currentMatches = strategies[matchRequirements[i]].GetMatches(entity);
+            if (currentMatches.Count == 0)
                 return [];
 
-            var foundArray = ArrayPool<TEntity>.Shared.Rent(seedEntities.Length);
-            var found = foundArray.AsSpan();
+            var tempArray = ArrayPool<TEntity>.Shared.Rent(seedEntities.Length);
+            var tempSpan = tempArray.AsSpan();
+            var matchCount = 0;
 
             try
             {
-                var foundIndex = 0;
-
                 foreach (var seedEntity in seedEntities)
                 {
-                    if (!entities.Contains(seedEntity)) continue;
-
-                    found[foundIndex++] = seedEntity;
+                    if (currentMatches.Contains(seedEntity))
+                        tempSpan[matchCount++] = seedEntity;
                 }
 
-                if (found.Length == 0)
+                if (matchCount == 0)
                     return [];
 
-                seedEntities = found[..foundIndex];
+                seedEntities = tempSpan[..matchCount];
             }
             finally
             {
-                ArrayPool<TEntity>.Shared.Return(foundArray);
+                ArrayPool<TEntity>.Shared.Return(tempArray);
             }
         }
 

@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace GenericMatcher.EntityMatch;
 
-public readonly struct MatchingResult<TEntity, TMatchType>
+public readonly record struct MatchingResult<TEntity, TMatchType>
     where TEntity : class
     where TMatchType : struct, Enum
 {
@@ -21,6 +21,7 @@ public readonly struct MatchingResult<TEntity, TMatchType>
     }
 
     public TEntity? Match { get; }
+    
     public ImmutableArray<TMatchType> Requirements { get; }
 
     public static implicit operator bool(MatchingResult<TEntity, TMatchType> result)

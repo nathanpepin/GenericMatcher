@@ -7,10 +7,5 @@ public interface IMatchDefinition<TEntity, out TMatchType>
 {
     TMatchType MatchType { get; }
     void Seed(TEntity[] entities);
-
     FrozenSet<TEntity> GetMatches(TEntity entity);
-
-    bool EntitiesMatch(TEntity a, TEntity b);
-
-    bool AllEntitiesMatch(IEnumerable<TEntity> entities);
 }

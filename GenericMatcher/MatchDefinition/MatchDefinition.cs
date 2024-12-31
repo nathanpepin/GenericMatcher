@@ -8,12 +8,15 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
     where TMatchType : Enum
     where TProperty : notnull
 {
-    public bool IsSeeded { get; private set; }
+    private Func<TEntity, bool> IsFilterMatch;
 
+    public bool IsSeeded { get; private set; }
     private ReadOnlyMemory<TEntity> Entities { get; set; }
     public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }
 
     public abstract Func<TEntity, TProperty> Conversion { get; }
+
+    public virtual Func<TEntity, bool> FilterMatch { get; } = _ => true;
 
     public void Seed(TEntity[] entities)
     {
@@ -27,16 +30,22 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
     public FrozenSet<TEntity> GetMatches(TEntity entity)
     {
         if (!IsSeeded)
+        {
             throw new MatchDefinitionNotSeededException();
+        }
 
         var key = Conversion(entity);
+
+        if (FilterMatch(entity) is false)
+        {
+            return FrozenSet<TEntity>.Empty;
+        }
 
         return GetEntityDictionary()
             .TryGetValue(key, out var matches)
             ? matches
             : FrozenSet<TEntity>.Empty;
     }
-
 
     public bool EntitiesMatch(TEntity a, TEntity b)
     {
@@ -82,6 +91,10 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         }
 
         return EntityDictionary = dictionary
-            .ToFrozenDictionary(x => x.Key, x => x.Value.ToFrozenSet());
+            .ToFrozenDictionary(
+                x => x.Key,
+                x => x.Value
+                    .Where(entity => FilterMatch(entity))
+                    .ToFrozenSet());
     }
 }

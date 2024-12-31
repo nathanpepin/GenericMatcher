@@ -22,7 +22,9 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
         foreach (var definition in definitions) definition.Seed(seedEntitiesMaterialized);
 
-        _matchStrategies = definitions
+        _seedEntities = seedEntitiesMaterialized.ToImmutableHashSet();
+
+        MatchStrategies = definitions
             .ToFrozenDictionary(x => x.MatchType);
 
         _dictionaryCache = seedEntitiesMaterialized
