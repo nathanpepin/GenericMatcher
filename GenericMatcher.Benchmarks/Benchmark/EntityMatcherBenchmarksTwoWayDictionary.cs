@@ -25,7 +25,7 @@ public class EntityMatcherBenchmarksTwoWayDictionary
     [Benchmark(Description = "Two-Way Dictionary")]
     public void TwoWayDictionary()
     {
-        _matcher!.Value.CreateTwoWayMatchDictionary([.._otherEntities!], TestMatchType.Id);
+        _matcher!.Value.CreateTwoWayMatchDictionary([.._otherEntities!], [TestMatchType.Id]);
     }
 
 

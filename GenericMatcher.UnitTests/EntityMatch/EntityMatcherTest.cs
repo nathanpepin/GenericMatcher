@@ -46,7 +46,7 @@ public sealed class EntityMatcherTests
         var testEntity = MockedEntities[1];
 
         // Act
-        var result = matcher.FindMatches(testEntity, TestMatchType.Id).ToArray();
+        var result = matcher.FindMatches(testEntity, [TestMatchType.Id]).ToArray();
 
         // Assert
         result.Should().ContainSingle().Which.Should().BeEquivalentTo(testEntity);
@@ -60,8 +60,8 @@ public sealed class EntityMatcherTests
         var testEntity = MockedEntities[1];
 
         // Act
-        var idDobResult = matcher.FindMatches(testEntity, TestMatchType.Id, TestMatchType.DateOfBirth).ToArray();
-        var dobResult = matcher.FindMatches(testEntity, TestMatchType.DateOfBirth).ToArray();
+        var idDobResult = matcher.FindMatches(testEntity, [TestMatchType.Id, TestMatchType.DateOfBirth]).ToArray();
+        var dobResult = matcher.FindMatches(testEntity, [TestMatchType.DateOfBirth]).ToArray();
 
         // Assert
         idDobResult.Should().ContainSingle().Which.Should().BeEquivalentTo(testEntity);
@@ -73,7 +73,7 @@ public sealed class EntityMatcherTests
     {
         // Arrange
         var matcher = CreateEntityMatcher();
-        var mutatedEntities = MockedEntities.Select(x => x with { Id = Guid.NewGuid() }).ToImmutableArray();
+        var mutatedEntities = MockedEntities.Select(x => x with { Id = Guid.NewGuid() }).ToArray();
 
         // Act
         var twoWayDictionary = matcher.CreateTwoWayMatchDictionary(mutatedEntities, [TestMatchType.Name, TestMatchType.DateOfBirth, TestMatchType.Phone]);

@@ -37,7 +37,7 @@ public sealed class EntityMatcherTestsBogus
         var matcher = CreateMatcher([seedEntity]);
 
         // Act
-        var result = matcher.FindMatches(matchingEntity, TestMatchType.Name, TestMatchType.Email).ToArray();
+        var result = matcher.FindMatches(matchingEntity, [TestMatchType.Name, TestMatchType.Email]).ToArray();
 
         // Assert
         result.Should().ContainSingle()
@@ -53,7 +53,7 @@ public sealed class EntityMatcherTestsBogus
         var matcher = CreateMatcher(seedEntities);
 
         // Act
-        var result = matcher.FindMatches(nonMatchingEntity, TestMatchType.Email, TestMatchType.Phone).ToArray();
+        var result = matcher.FindMatches(nonMatchingEntity, [TestMatchType.Email, TestMatchType.Phone]).ToArray();
 
         // Assert
         result.Should().BeEmpty();
@@ -71,12 +71,12 @@ public sealed class EntityMatcherTestsBogus
         var matchTypes = new[] { TestMatchType.Email, TestMatchType.Phone };
 
         // Act
-        var result = matcher.CreateTwoWayMatchDictionary(matchingEntities, matchTypes);
+        var result = matcher.CreateTwoWayMatchDictionary([..matchingEntities], matchTypes);
 
         // Assert
-        result.AToBMatchedResults.Value.Count.Should().Be(5);
-        result.AToBUnmatchedResults.Value.Count.Should().Be(5);
-        result.BToAUnmatchedResults.Value.Count.Should().Be(0);
+        result.AToBMatchedResults.Count.Should().Be(5);
+        result.AToBUnmatchedResults.Count.Should().Be(5);
+        result.BToAUnmatchedResults.Count.Should().Be(0);
     }
 
     [Fact]
@@ -94,11 +94,11 @@ public sealed class EntityMatcherTestsBogus
         };
 
         // Act
-        var result = matcher.CreateTwoWayMatchDictionary(candidateEntities, matchTiers);
+        var result = matcher.CreateTwoWayMatchDictionary([..candidateEntities], matchTiers);
 
         // Assert
         result.AToB.Count.Should().BeGreaterThan(0);
-        result.AToBUnmatchedResults.Value.Count.Should().BeLessThan(seedEntities.Count);
+        result.AToBUnmatchedResults.Count.Should().BeLessThan(seedEntities.Count);
     }
 
     // Helper Methods
