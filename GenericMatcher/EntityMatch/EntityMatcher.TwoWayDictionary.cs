@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using GenericMatcher.Collections;
 using GenericMatcher.Exceptions;
@@ -94,17 +95,22 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
 
     private static ReadOnlySpan<TEntity> ReduceMatchesFromRemaining(ReadOnlySpan<TEntity> matches, HashSet<TEntity> remaining)
     {
-        Span<TEntity> result = new TEntity[matches.Length];
+        var rentedArray = ArrayPool<TEntity>.Shared.Rent(matches.Length);
         var index = 0;
 
-        foreach (var match in matches)
+        try
         {
-            if (!remaining.Contains(match)) continue;
+            foreach (var match in matches)
+            {
+                if (remaining.Contains(match))
+                    rentedArray[index++] = match;
+            }
 
-            result[index] = match;
-            index++;
+            return rentedArray.AsSpan(0, index);
         }
-
-        return result[..index];
+        finally
+        {
+            ArrayPool<TEntity>.Shared.Return(rentedArray);
+        }
     }
 }
