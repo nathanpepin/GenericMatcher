@@ -9,7 +9,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     where TMatchType : struct, Enum
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
+    public TwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
         TMatchType[] criteria,
         bool throwOnDuplicateMatch = true)
@@ -20,7 +20,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         return CreateTwoWayMatchDictionary(otherEntities, [criteria], throwOnDuplicateMatch);
     }
 
-    public TwoWayFrozenMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
+    public TwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
         TMatchType[][] tieredCriteria,
         bool throwOnDuplicateMatch = true)
@@ -33,17 +33,17 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
 
         using var remainingInOther = new PooledHashSet<TEntity>(otherEntities.Length);
         using var remainingInSeed = new PooledHashSet<TEntity>(_seedEntities.Count);
-        
-        using var otherToSeed = new PooledDictionary<TEntity, MatchingResult<TEntity, TMatchType>>(otherEntities.Length);
-        using var seedToOther = new PooledDictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_seedEntities.Count);
+
+        var otherToSeed = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(otherEntities.Length);
+        var seedToOther = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_seedEntities.Count);
 
         remainingInOther.HashSet.UnionWith(otherEntities);
         remainingInSeed.HashSet.UnionWith(_seedEntities);
 
         foreach (var entity in otherEntities)
-            otherToSeed.Dictionary[entity] = MatchingResult<TEntity, TMatchType>.Empty;
+            otherToSeed[entity] = MatchingResult<TEntity, TMatchType>.Empty;
         foreach (var entity in _seedEntities)
-            seedToOther.Dictionary[entity] = MatchingResult<TEntity, TMatchType>.Empty;
+            seedToOther[entity] = MatchingResult<TEntity, TMatchType>.Empty;
 
         foreach (var tier in tieredCriteria)
         {
@@ -53,14 +53,14 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
                 tier,
                 remainingInOther.HashSet,
                 remainingInSeed.HashSet,
-                otherToSeed.Dictionary,
-                seedToOther.Dictionary,
+                otherToSeed,
+                seedToOther,
                 throwOnDuplicateMatch);
         }
 
-        return new TwoWayFrozenMatchDictionary<TEntity, TMatchType>(
-            seedToOther.Dictionary,
-            otherToSeed.Dictionary);
+        return new TwoWayMatchDictionary<TEntity, TMatchType>(
+            seedToOther,
+            otherToSeed);
     }
 
     private void ProcessTier(
@@ -86,7 +86,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
 
             remainingInOther.Remove(entity);
             remainingInSeed.Remove(match);
-            
+
             otherToSeed[entity] = new MatchingResult<TEntity, TMatchType>(match, tier);
             seedToOther[match] = new MatchingResult<TEntity, TMatchType>(entity, tier);
         }

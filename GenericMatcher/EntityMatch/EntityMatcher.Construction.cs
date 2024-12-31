@@ -24,12 +24,8 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
         _seedEntities = seedEntitiesMaterialized.ToImmutableHashSet();
 
-        MatchStrategies = definitions
+        _matchStrategies = definitions
             .ToFrozenDictionary(x => x.MatchType);
-
-        _dictionaryCache = seedEntitiesMaterialized
-            .ToNullMatchingResults<TEntity, TMatchType>()
-            .ToImmutableDictionary();
     }
 
     private static void ValidateMatchDefinitions(

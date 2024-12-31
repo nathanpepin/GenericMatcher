@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.MatchDefinition;
@@ -8,11 +10,9 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
     where TMatchType : Enum
     where TProperty : notnull
 {
-    private Func<TEntity, bool> IsFilterMatch;
-
     public bool IsSeeded { get; private set; }
     private ReadOnlyMemory<TEntity> Entities { get; set; }
-    public FrozenDictionary<TProperty, FrozenSet<TEntity>>? EntityDictionary { get; private set; }
+    public Dictionary<TProperty, ReadOnlyMemory<TEntity>>? EntityDictionary { get; private set; }
 
     public abstract Func<TEntity, TProperty> Conversion { get; }
 
@@ -27,7 +27,7 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
 
     public abstract TMatchType MatchType { get; }
 
-    public FrozenSet<TEntity> GetMatches(TEntity entity)
+    public ReadOnlySpan<TEntity> GetMatches(TEntity entity)
     {
         if (!IsSeeded)
         {
@@ -38,13 +38,13 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
 
         if (FilterMatch(entity) is false)
         {
-            return FrozenSet<TEntity>.Empty;
+            return [];
         }
 
         return GetEntityDictionary()
             .TryGetValue(key, out var matches)
-            ? matches
-            : FrozenSet<TEntity>.Empty;
+            ? matches.Span
+            : [];
     }
 
     public bool EntitiesMatch(TEntity a, TEntity b)
@@ -71,30 +71,27 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
         return true;
     }
 
-    private FrozenDictionary<TProperty, FrozenSet<TEntity>> GetEntityDictionary()
+    private Dictionary<TProperty, ReadOnlyMemory<TEntity>> GetEntityDictionary()
     {
         if (EntityDictionary is not null) return EntityDictionary;
 
-        var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(Entities.Length);
+        var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(
+            Entities.Length,
+            EqualityComparer<TProperty>.Default);
 
-        var entitiesSpan = Entities.Span;
-
-        for (var i = 0; i < Entities.Length; i++)
+        var span = Entities.Span;
+        for (var i = 0; i < span.Length; i++)
         {
-            var it = entitiesSpan[i];
-            var property = Conversion(it);
-
-            if (dictionary.TryGetValue(property, out var value))
-                value.Add(it);
-            else
-                dictionary.Add(property, [it]);
+            var entity = span[i];
+            var key = Conversion(entity);
+            ref var bucket = ref CollectionsMarshal.GetValueRefOrAddDefault(
+                dictionary, key, out var exists);
+            if (!exists) bucket = [];
+            bucket!.Add(entity);
         }
 
-        return EntityDictionary = dictionary
-            .ToFrozenDictionary(
-                x => x.Key,
-                x => x.Value
-                    .Where(entity => FilterMatch(entity))
-                    .ToFrozenSet());
+        return EntityDictionary = dictionary.ToDictionary(
+            x => x.Key,
+            x => new ReadOnlyMemory<TEntity>(x.Value.ToArray()));
     }
 }

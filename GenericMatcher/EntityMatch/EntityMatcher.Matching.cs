@@ -25,7 +25,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         if (matchRequirements.Length == 0)
             return [];
 
-        var strategies = MatchStrategies;
+        var strategies = _matchStrategies;
         var seedEntities = strategies[matchRequirements[0]]
             .GetMatches(entity)
             .ToArray()
@@ -37,7 +37,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         for (var i = 1; i < matchRequirements.Length; i++)
         {
             var currentMatches = strategies[matchRequirements[i]].GetMatches(entity);
-            if (currentMatches.Count == 0)
+            if (currentMatches.Length == 0)
                 return [];
 
             var tempArray = ArrayPool<TEntity>.Shared.Rent(seedEntities.Length);
@@ -46,8 +46,9 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
 
             try
             {
-                foreach (var seedEntity in seedEntities)
+                for (var j = 0; j < seedEntities.Length; j++)
                 {
+                    var seedEntity = seedEntities[j];
                     if (currentMatches.Contains(seedEntity))
                         tempSpan[matchCount++] = seedEntity;
                 }
@@ -64,5 +65,19 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
         }
 
         return seedEntities;
+    }
+}
+
+file static class Extensions
+{
+    public static bool Contains<TEntity>(this ReadOnlySpan<TEntity> span, TEntity entity)
+    {
+        for (var i = 0; i < span.Length; i++)
+        {
+            var iEntity = span[i];
+            if (Equals(iEntity, entity)) return true;
+        }
+
+        return false;
     }
 }

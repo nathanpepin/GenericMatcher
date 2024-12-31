@@ -16,9 +16,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
     ///     Encapsulates the logic required to determine relationships between entities
     ///     and their corresponding match types within a given context.
     /// </summary>
-    public FrozenDictionary<TMatchType, IMatchDefinition<TEntity, TMatchType>> MatchStrategies { get; }
-
-    private readonly ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> _dictionaryCache;
-
+    private readonly FrozenDictionary<TMatchType, IMatchDefinition<TEntity, TMatchType>> _matchStrategies;
+    
     private readonly ImmutableHashSet<TEntity> _seedEntities;
 }
