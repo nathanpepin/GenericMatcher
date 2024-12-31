@@ -71,10 +71,7 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> seedToOther,
         bool throwOnDuplicateMatch)
     {
-        using var matchQueue = new PooledHashSet<TEntity>(remainingInOther.Count);
-        matchQueue.HashSet.UnionWith(remainingInOther);
-
-        foreach (var entity in matchQueue.HashSet)
+        foreach (var entity in remainingInOther)
         {
             var matches = FindMatches(entity, tier);
             var reducedMatches = ReduceMatchesFromRemaining(matches, remainingInSeed);
