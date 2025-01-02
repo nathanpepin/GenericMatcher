@@ -11,6 +11,6 @@ public interface ITwoWayMatchDictionary<TEntity, TMatchType> where TEntity : cla
     Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> MatchedSeedToOther { get; }
     Lazy<ImmutableHashSet<TEntity>> UnMatchedFromSeed { get; }
     Lazy<ImmutableHashSet<TEntity>> UnMatchedFromOther { get; }
-    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetSeedToOtherDictionary { get; }
-    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetOtherToSeedDictionary { get; }
+    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> SeedToOtherDictionary { get; }
+    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> OtherToSeedDictionary { get; }
 }

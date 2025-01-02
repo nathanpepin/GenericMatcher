@@ -12,8 +12,8 @@ public readonly struct TwoWayMatchDictionary<TEntity, TMatchType> : ITwoWayMatch
         SeedToOther = seedToOther;
         OtherToSeed = otherToSeed;
 
-        GetSeedToOtherDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(seedToOther.ToImmutableDictionary);
-        GetOtherToSeedDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(otherToSeed.ToImmutableDictionary);
+        SeedToOtherDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(seedToOther.ToImmutableDictionary);
+        OtherToSeedDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(otherToSeed.ToImmutableDictionary);
 
         MatchedSeedToOther = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(() => seedToOther
             .Where(x => x.Value.Match is not null)
@@ -52,8 +52,8 @@ public readonly struct TwoWayMatchDictionary<TEntity, TMatchType> : ITwoWayMatch
     public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> MatchedSeedToOther { get; }
     public Lazy<ImmutableHashSet<TEntity>> UnMatchedFromSeed { get; }
     public Lazy<ImmutableHashSet<TEntity>> UnMatchedFromOther { get; }
-    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetSeedToOtherDictionary { get; }
-    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetOtherToSeedDictionary { get; }
+    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> SeedToOtherDictionary { get; }
+    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> OtherToSeedDictionary { get; }
 
     private Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> SeedToOther { get; }
     private Dictionary<TEntity, MatchingResult<TEntity, TMatchType>> OtherToSeed { get; }
