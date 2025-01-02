@@ -10,6 +10,8 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
     where TMatchType : Enum
     where TProperty : notnull
 {
+    protected virtual StringComparison StringComparison => StringComparison.OrdinalIgnoreCase;
+
     public bool IsSeeded { get; private set; }
     private ReadOnlyMemory<TEntity> Entities { get; set; }
     public Dictionary<TProperty, ReadOnlyMemory<TEntity>>? EntityDictionary { get; private set; }
@@ -75,9 +77,13 @@ public abstract class MatchDefinition<TEntity, TMatchType, TProperty> : IMatchDe
     {
         if (EntityDictionary is not null) return EntityDictionary;
 
+        var equalityComparer = typeof(TProperty) == typeof(string)
+            ? (IEqualityComparer<TProperty>)StringComparer.FromComparison(StringComparison)
+            : EqualityComparer<TProperty>.Default;
+
         var dictionary = new Dictionary<TProperty, HashSet<TEntity>>(
             Entities.Length,
-            EqualityComparer<TProperty>.Default);
+            equalityComparer);
 
         var span = Entities.Span;
         for (var i = 0; i < span.Length; i++)
