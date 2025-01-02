@@ -13,22 +13,22 @@ public readonly struct TwoWayMatchConcurrentDictionary<TEntity, TMatchType> : IT
         _seedToOtherConcurrent = seedToOther;
         _otherToSeedConcurrent = otherToSeed;
 
-        _seedToOtherImmutable = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(seedToOther.ToImmutableDictionary);
-        _otherToSeedImmutable = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(otherToSeed.ToImmutableDictionary);
+        GetSeedToOtherDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(seedToOther.ToImmutableDictionary);
+        GetOtherToSeedDictionary = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(otherToSeed.ToImmutableDictionary);
 
 
-        _matchedSeedToOther = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(() => seedToOther
+        MatchedSeedToOther = new Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>>(() => seedToOther
             .Where(x => x.Value.Match is not null)
             .ToImmutableDictionary(x => x.Key, x => x.Value));
 
-        _unmatchedFromSeed = new Lazy<ImmutableHashSet<TEntity>>(() =>
+        UnMatchedFromSeed = new Lazy<ImmutableHashSet<TEntity>>(() =>
         [
             ..seedToOther
                 .Where(x => x.Value.Match is null)
                 .Select(x => x.Key)
         ]);
 
-        _unmatchedFromOther = new Lazy<ImmutableHashSet<TEntity>>(() =>
+        UnMatchedFromOther = new Lazy<ImmutableHashSet<TEntity>>(() =>
         [
             ..otherToSeed
                 .Where(x => x.Value.Match is null)
@@ -51,32 +51,13 @@ public readonly struct TwoWayMatchConcurrentDictionary<TEntity, TMatchType> : IT
         return _otherToSeedConcurrent[entity].Match is not null;
     }
 
-    public ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> MatchedSeedToOther()
-    {
-        return _matchedSeedToOther.Value;
-    }
+    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> MatchedSeedToOther { get; }
+    public Lazy<ImmutableHashSet<TEntity>> UnMatchedFromSeed { get; }
+    public Lazy<ImmutableHashSet<TEntity>> UnMatchedFromOther { get; }
+    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetSeedToOtherDictionary { get; }
+    public Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetOtherToSeedDictionary { get; }
 
-    public ImmutableHashSet<TEntity> UnMatchedFromSeed(TEntity entity)
-    {
-        return _unmatchedFromSeed.Value;
-    }
-
-    public ImmutableHashSet<TEntity> UnMatchedFromOther(TEntity entity)
-    {
-        return _unmatchedFromOther.Value;
-    }
-
-    public ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetSeedToOtherDictionary() => _seedToOtherImmutable.Value;
-
-    public ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetOtherToSeedDictionary() => _otherToSeedImmutable.Value;
 
     private readonly ConcurrentDictionary<TEntity, MatchingResult<TEntity, TMatchType>> _seedToOtherConcurrent;
     private readonly ConcurrentDictionary<TEntity, MatchingResult<TEntity, TMatchType>> _otherToSeedConcurrent;
-
-    private readonly Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> _seedToOtherImmutable;
-    private readonly Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> _otherToSeedImmutable;
-    private readonly Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> _matchedSeedToOther;
-
-    private readonly Lazy<ImmutableHashSet<TEntity>> _unmatchedFromSeed;
-    private readonly Lazy<ImmutableHashSet<TEntity>> _unmatchedFromOther;
 }

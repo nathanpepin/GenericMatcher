@@ -8,7 +8,7 @@
         <Authors>Nathan Pepin</Authors>
         <Title>Generic Matcher</Title>
         <Company>Nathan pepin</Company>
-        <PackageVersion>1.3.0-preview</PackageVersion>
+        <PackageVersion>1.4.0-preview</PackageVersion>
         <Product>Nathan Pepin</Product>
         <Description>Creates configurable generic matching.</Description>
         <PackageProjectUrl>https://github.com/nathanpepin/GenericMatcher</PackageProjectUrl>

@@ -8,9 +8,9 @@ public interface ITwoWayMatchDictionary<TEntity, TMatchType> where TEntity : cla
     MatchingResult<TEntity, TMatchType> FindMatchFromSeedToOther(TEntity entity);
     MatchingResult<TEntity, TMatchType> FindMatchFromOtherToSeed(TEntity entity);
     bool HasMatch(TEntity entity);
-    ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> MatchedSeedToOther();
-    ImmutableHashSet<TEntity> UnMatchedFromSeed(TEntity entity);
-    ImmutableHashSet<TEntity> UnMatchedFromOther(TEntity entity);
-    ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetSeedToOtherDictionary();
-    ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>> GetOtherToSeedDictionary();
+    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> MatchedSeedToOther { get; }
+    Lazy<ImmutableHashSet<TEntity>> UnMatchedFromSeed { get; }
+    Lazy<ImmutableHashSet<TEntity>> UnMatchedFromOther { get; }
+    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetSeedToOtherDictionary { get; }
+    Lazy<ImmutableDictionary<TEntity, MatchingResult<TEntity, TMatchType>>> GetOtherToSeedDictionary { get; }
 }
