@@ -1,6 +1,8 @@
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using GenericMatcher.Collections;
+using GenericMatcher.Collections.TwoWayMatching;
 using GenericMatcher.Exceptions;
 
 namespace GenericMatcher.EntityMatch;
@@ -10,20 +12,27 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     where TMatchType : struct, Enum
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
+    public ITwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
         TMatchType[] criteria,
+        ParallelOptions? parallelOptions = null,
         bool throwOnDuplicateMatch = true)
     {
         ArgumentNullException.ThrowIfNull(otherEntities);
         ArgumentNullException.ThrowIfNull(criteria);
 
-        return CreateTwoWayMatchDictionary(otherEntities, [criteria], throwOnDuplicateMatch);
+        return CreateTwoWayMatchDictionary(otherEntities, [criteria], parallelOptions, throwOnDuplicateMatch);
     }
 
-    public TwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
+    private readonly ParallelOptions _defaultParallelOptions = new()
+    {
+        MaxDegreeOfParallelism = Environment.ProcessorCount,
+    };
+
+    public ITwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
         TMatchType[][] tieredCriteria,
+        ParallelOptions? parallelOptions = null,
         bool throwOnDuplicateMatch = true)
     {
         ArgumentNullException.ThrowIfNull(otherEntities);
@@ -32,19 +41,19 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         if (tieredCriteria.Length == 0)
             throw new ArgumentException("Tiered criteria cannot be empty", nameof(tieredCriteria));
 
+        if (otherEntities.Length >= ParallelStart)
+        {
+            return CreateTwoWayMatchDictionaryParallel(otherEntities, tieredCriteria, parallelOptions ?? _defaultParallelOptions, throwOnDuplicateMatch);
+        }
+
         using var remainingInOther = new PooledHashSet<TEntity>(otherEntities.Length);
-        using var remainingInSeed = new PooledHashSet<TEntity>(_seedEntities.Count);
-
-        var otherToSeed = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(otherEntities.Length);
-        var seedToOther = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_seedEntities.Count);
-
         remainingInOther.HashSet.UnionWith(otherEntities);
+
+        using var remainingInSeed = new PooledHashSet<TEntity>(_seedEntities.Length);
         remainingInSeed.HashSet.UnionWith(_seedEntities);
 
-        foreach (var entity in otherEntities)
-            otherToSeed[entity] = MatchingResult<TEntity, TMatchType>.Empty;
-        foreach (var entity in _seedEntities)
-            seedToOther[entity] = MatchingResult<TEntity, TMatchType>.Empty;
+        var otherToSeed = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(otherEntities.Length);
+        var seedToOther = new Dictionary<TEntity, MatchingResult<TEntity, TMatchType>>(_seedEntities.Length);
 
         foreach (var tier in tieredCriteria)
         {
@@ -57,6 +66,16 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
                 otherToSeed,
                 seedToOther,
                 throwOnDuplicateMatch);
+        }
+
+        foreach (var entity in remainingInOther.HashSet)
+        {
+            otherToSeed[entity] = MatchingResult<TEntity, TMatchType>.Empty;
+        }
+
+        foreach (var entity in remainingInSeed.HashSet)
+        {
+            seedToOther[entity] = MatchingResult<TEntity, TMatchType>.Empty;
         }
 
         return new TwoWayMatchDictionary<TEntity, TMatchType>(
@@ -95,7 +114,8 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
 
     private static ReadOnlySpan<TEntity> ReduceMatchesFromRemaining(ReadOnlySpan<TEntity> matches, HashSet<TEntity> remaining)
     {
-        var rentedArray = ArrayPool<TEntity>.Shared.Rent(matches.Length);
+        var rentedArray = CustomArrayPool<TEntity>.Rent(matches.Length);
+        var rentedSpan = rentedArray.AsSpan();
         var index = 0;
 
         try
@@ -103,14 +123,14 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
             foreach (var match in matches)
             {
                 if (remaining.Contains(match))
-                    rentedArray[index++] = match;
+                    rentedSpan[index++] = match;
             }
 
-            return rentedArray.AsSpan(0, index);
+            return rentedSpan[..index];
         }
         finally
         {
-            ArrayPool<TEntity>.Shared.Return(rentedArray);
+            CustomArrayPool<TEntity>.Return(rentedArray);
         }
     }
 }

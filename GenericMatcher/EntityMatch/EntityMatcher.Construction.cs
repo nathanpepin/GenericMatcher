@@ -6,7 +6,9 @@ using GenericMatcher.MatchDefinition;
 
 namespace GenericMatcher.EntityMatch;
 
-public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity : class where TMatchType : struct, Enum
+public readonly partial struct EntityMatcher<TEntity, TMatchType>
+    where TEntity : class
+    where TMatchType : struct, Enum
 {
     public EntityMatcher(
         IEnumerable<TEntity> seedEntities,
@@ -14,16 +16,14 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType> where TEntity 
     {
         ArgumentNullException.ThrowIfNull(seedEntities);
         ArgumentNullException.ThrowIfNull(matchDefinitions);
-
+        
         var definitions = matchDefinitions.ToArray();
         ValidateMatchDefinitions(definitions);
+        
+        _seedEntities = seedEntities.ToArray();
 
-        var seedEntitiesMaterialized = seedEntities.ToArray();
-
-        foreach (var definition in definitions) definition.Seed(seedEntitiesMaterialized);
-
-        _seedEntities = seedEntitiesMaterialized.ToImmutableHashSet();
-
+        foreach (var definition in definitions) definition.Seed(_seedEntities);
+        
         _matchStrategies = definitions
             .ToFrozenDictionary(x => x.MatchType);
     }

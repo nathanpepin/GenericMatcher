@@ -11,7 +11,7 @@ public class EntityMatcherBenchmarksTwoWayDictionary
     private EntityMatcher<TestEntity, TestMatchType>? _matcher;
     private List<TestEntity>? _otherEntities;
     private TestEntity? _testEntity;
-    [Params(100, 1_000, 10_000, 100_000)] public int EntityCount { get; set; }
+    [Params(100, 1_000, 10_000, 100_000, 1_000_000)] public int EntityCount { get; set; }
 
     [GlobalSetup]
     public void Setup()
