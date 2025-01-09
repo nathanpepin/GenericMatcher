@@ -24,11 +24,6 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         return CreateTwoWayMatchDictionary(otherEntities, [criteria], parallelOptions, throwOnDuplicateMatch);
     }
 
-    private readonly ParallelOptions _defaultParallelOptions = new()
-    {
-        MaxDegreeOfParallelism = Environment.ProcessorCount,
-    };
-
     public ITwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
         TMatchType[][] tieredCriteria,
@@ -41,9 +36,9 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
         if (tieredCriteria.Length == 0)
             throw new ArgumentException("Tiered criteria cannot be empty", nameof(tieredCriteria));
 
-        if (otherEntities.Length >= ParallelStart)
+        if (parallelOptions is not null && otherEntities.Length >= ParallelStart)
         {
-            return CreateTwoWayMatchDictionaryParallel(otherEntities, tieredCriteria, parallelOptions ?? _defaultParallelOptions, throwOnDuplicateMatch);
+            return CreateTwoWayMatchDictionaryParallel(otherEntities, tieredCriteria, parallelOptions, throwOnDuplicateMatch);
         }
 
         using var remainingInOther = new PooledHashSet<TEntity>(otherEntities.Length);
