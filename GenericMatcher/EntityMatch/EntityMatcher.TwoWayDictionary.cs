@@ -1,6 +1,5 @@
-using System.Buffers;
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using GenericMatcher.Collections;
 using GenericMatcher.Collections.TwoWayMatching;
 using GenericMatcher.Exceptions;
@@ -11,6 +10,8 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
     where TEntity : class
     where TMatchType : struct, Enum
 {
+    public JsonSerializerOptions JsonOptions { get; init; } = new() { WriteIndented = true };
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ITwoWayMatchDictionary<TEntity, TMatchType> CreateTwoWayMatchDictionary(
         TEntity[] otherEntities,
@@ -95,7 +96,12 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
                 continue;
 
             if (throwOnDuplicateMatch && reducedMatches.Length > 1)
-                throw new DuplicateKeyException();
+            {
+                var entityJson = JsonSerializer.Serialize(entity, JsonOptions);
+                var entitiesJson = JsonSerializer.Serialize(reducedMatches.ToArray(), JsonOptions);
+                var tierJson = JsonSerializer.Serialize(tier, JsonOptions);
+                throw new DuplicateKeyException(entityJson, entitiesJson, tierJson);
+            }
 
             var match = reducedMatches[0];
 

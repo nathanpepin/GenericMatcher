@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using GenericMatcher.Collections;
 using GenericMatcher.Collections.TwoWayMatching;
 using GenericMatcher.Exceptions;
@@ -74,7 +75,12 @@ public readonly partial struct EntityMatcher<TEntity, TMatchType>
                 return;
 
             if (throwOnDuplicateMatch && reducedMatches.Length > 1)
-                throw new DuplicateKeyException();
+            {
+                var entityJson = JsonSerializer.Serialize(entity);
+                var entitiesJson = JsonSerializer.Serialize(reducedMatches.ToArray());
+                var tierJson = JsonSerializer.Serialize(tier);
+                throw new DuplicateKeyException(entityJson, entitiesJson, tierJson);
+            }
 
             var match = reducedMatches[0];
 
